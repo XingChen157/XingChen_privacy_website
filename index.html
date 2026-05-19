@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>星辰的个人小站</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #07071a;
+      --surface: rgba(255,255,255,0.04);
+      --surface-hover: rgba(255,255,255,0.07);
+      --border: rgba(255,255,255,0.09);
+      --border-accent: rgba(140,120,255,0.4);
+      --accent: #8c78ff;
+      --accent2: #60d0ff;
+      --accent3: #ff9eb5;
+      --text: #d6d8f5;
+      --muted: #7a7da8;
+      --white: #f0eeff;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+      line-height: 1.75;
+      overflow-x: hidden;
+    }
+
+    /* ── Canvas ── */
+    #sky {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── Nav ── */
+    header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 64px;
+      background: rgba(7,7,26,0.75);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 5px;
+      color: var(--white);
+      text-decoration: none;
+    }
+    .brand em {
+      font-style: normal;
+      background: linear-gradient(90deg,var(--accent),var(--accent2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    nav a {
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 0.88rem;
+      letter-spacing: 1.5px;
+      margin-left: 36px;
+      transition: color .25s;
+    }
+    nav a:hover, nav a.active { color: var(--white); }
+
+    /* ── Page Layout ── */
+    main {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Section shell ── */
+    .sec {
+      min-height: 100vh;
+      padding: 120px 64px 100px;
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+
+    .sec-label {
+      font-size: 0.72rem;
+      letter-spacing: 4px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .sec-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 10px;
+      position: relative;
+      display: inline-block;
+    }
+    .sec-title::after {
+      content: '';
+      position: absolute;
+      left: 0; bottom: -10px;
+      width: 36px; height: 2px;
+      background: linear-gradient(90deg,var(--accent),var(--accent2));
+    }
+
+    .sec-desc {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-top: 22px;
+      margin-bottom: 52px;
+    }
+
+    /* ─────────────────────────────────────────
+       §1  个人简介
+    ───────────────────────────────────────── */
+    #intro {
+      display: flex;
+      align-items: center;
+      min-height: 100vh;
+      padding-top: 100px;
+      padding-bottom: 80px;
+    }
+
+    .intro-wrap {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 72px;
+      align-items: center;
+      width: 100%;
+    }
+
+    /* avatar */
+    .avatar-box {
+      position: relative;
+      flex-shrink: 0;
+    }
+    .avatar-ring {
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, var(--accent), var(--accent2), var(--accent3), var(--accent));
+      padding: 2px;
+      animation: spin 8s linear infinite;
+    }
+    .avatar-inner {
+      width: 100%; height: 100%;
+      border-radius: 50%;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 5rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .avatar-badge {
+      position: absolute;
+      bottom: 6px; right: 6px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.68rem;
+      letter-spacing: 1px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    /* intro text */
+    .intro-text h1 {
+      font-size: clamp(2.2rem,4vw,3.2rem);
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: 4px;
+      line-height: 1.2;
+      margin-bottom: 14px;
+    }
+    .intro-text h1 span {
+      background: linear-gradient(90deg,var(--accent),var(--accent2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .intro-text .tagline {
+      font-size: 1rem;
+      color: var(--muted);
+      letter-spacing: 2px;
+      margin-bottom: 28px;
+    }
+
+    .intro-text .bio {
+      font-size: 0.95rem;
+      color: var(--text);
+      max-width: 520px;
+      line-height: 1.9;
+      margin-bottom: 36px;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 36px;
+    }
+    .tag {
+      font-size: 0.78rem;
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border-accent);
+      color: var(--accent);
+      letter-spacing: 0.5px;
+    }
+
+    .social-row {
+      display: flex;
+      gap: 14px;
+    }
+    .social-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 10px 22px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      text-decoration: none;
+      border: 1px solid var(--border-accent);
+      color: var(--text);
+      transition: all .25s;
+    }
+    .social-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* info pills */
+    .info-pills {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 36px;
+    }
+    .pill {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .pill-icon { font-size: 1.4rem; }
+    .pill-label { font-size: 0.72rem; color: var(--muted); }
+    .pill-val { font-size: 0.88rem; color: var(--white); font-weight: 500; }
+
+    /* ─────────────────────────────────────────
+       §2  动漫推荐
+    ───────────────────────────────────────── */
+    #anime .anime-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 22px;
+    }
+
+    .anime-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      transition: transform .3s, border-color .3s, box-shadow .3s;
+      cursor: default;
+    }
+    .anime-card:hover {
+      transform: translateY(-6px);
+      border-color: var(--border-accent);
+      box-shadow: 0 16px 40px rgba(140,120,255,0.12);
+    }
+
+    .anime-cover {
+      height: 156px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .anime-cover::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, transparent 50%, rgba(7,7,26,0.8));
+    }
+
+    .ac1 { background: linear-gradient(135deg,#1a0930,#3d1060); }
+    .ac2 { background: linear-gradient(135deg,#091a30,#1060a0); }
+    .ac3 { background: linear-gradient(135deg,#1a0a18,#6020a0); }
+    .ac4 { background: linear-gradient(135deg,#0a1a18,#106050); }
+    .ac5 { background: linear-gradient(135deg,#1a1008,#806010); }
+    .ac6 { background: linear-gradient(135deg,#1a0810,#803040); }
+
+    .anime-score {
+      position: absolute;
+      top: 10px; right: 10px;
+      z-index: 1;
+      background: rgba(140,120,255,0.85);
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 8px;
+    }
+
+    .anime-body { padding: 16px; }
+    .anime-name { font-size: 0.95rem; color: var(--white); font-weight: 600; margin-bottom: 4px; }
+    .anime-sub  { font-size: 0.78rem; color: var(--muted); margin-bottom: 10px; }
+    .anime-desc { font-size: 0.8rem; color: var(--text); line-height: 1.6; }
+
+    .anime-genres {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 10px;
+    }
+    .genre {
+      font-size: 0.68rem;
+      padding: 2px 9px;
+      border-radius: 10px;
+      background: rgba(96,208,255,0.1);
+      color: var(--accent2);
+    }
+
+    /* ─────────────────────────────────────────
+       §3  留言板
+    ───────────────────────────────────────── */
+    #message .msg-layout {
+      display: grid;
+      grid-template-columns: 1fr 1.1fr;
+      gap: 48px;
+      align-items: start;
+    }
+
+    /* form */
+    .msg-form {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+    }
+
+    .msg-form h3 {
+      font-size: 1rem;
+      color: var(--white);
+      font-weight: 600;
+      margin-bottom: 24px;
+      letter-spacing: 1px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 7px;
+      letter-spacing: 0.5px;
+    }
+
+    input[type=text], input[type=email], textarea, select {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: var(--white);
+      font-size: 0.88rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .25s;
+    }
+    input[type=text]:focus, input[type=email]:focus, textarea:focus, select:focus {
+      border-color: var(--accent);
+    }
+    input::placeholder, textarea::placeholder { color: var(--muted); }
+    textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
+
+    .mood-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+    .mood-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .mood-btn.active, .mood-btn:hover {
+      background: rgba(140,120,255,0.15);
+      border-color: var(--accent);
+      color: var(--white);
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 13px;
+      border-radius: 30px;
+      background: linear-gradient(90deg,var(--accent),var(--accent2));
+      border: none;
+      color: #fff;
+      font-size: 0.92rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: opacity .25s, transform .2s;
+    }
+    .submit-btn:hover { opacity: 0.88; transform: translateY(-2px); }
+    .submit-btn:active { transform: scale(0.98); }
+
+    /* message wall */
+    .msg-wall {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-height: 540px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .msg-wall::-webkit-scrollbar { width: 4px; }
+    .msg-wall::-webkit-scrollbar-track { background: transparent; }
+    .msg-wall::-webkit-scrollbar-thumb { background: var(--border-accent); border-radius: 4px; }
+
+    .msg-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 20px;
+      position: relative;
+      transition: border-color .25s;
+      animation: fadeUp .4s ease both;
+    }
+    .msg-item:hover { border-color: var(--border-accent); }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .msg-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .msg-avatar {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .msg-name { font-size: 0.88rem; color: var(--white); font-weight: 600; }
+    .msg-time { font-size: 0.72rem; color: var(--muted); margin-left: auto; }
+    .msg-mood { font-size: 0.82rem; }
+    .msg-text { font-size: 0.85rem; color: var(--text); line-height: 1.7; }
+
+    .wall-empty {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+    .wall-empty .empty-icon { font-size: 2.4rem; margin-bottom: 10px; }
+
+    /* ─────────────────────────────────────────
+       §4  精选照片
+    ───────────────────────────────────────── */
+    #photos .photo-grid {
+      columns: 3;
+      column-gap: 18px;
+    }
+
+    .photo-item {
+      break-inside: avoid;
+      margin-bottom: 18px;
+      border-radius: 14px;
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+      transition: transform .3s;
+    }
+    .photo-item:hover { transform: scale(1.02); }
+
+    .photo-mock {
+      width: 100%;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .photo-mock::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: inherit;
+      opacity: 0;
+      transition: opacity .3s;
+    }
+    .photo-item:hover .photo-mock::after { opacity: 0.2; }
+
+    .ph1  { height: 200px; background: linear-gradient(135deg,#0e0e30,#2a1a60); }
+    .ph2  { height: 260px; background: linear-gradient(135deg,#0a1828,#103860); }
+    .ph3  { height: 180px; background: linear-gradient(135deg,#1a0a28,#500a80); }
+    .ph4  { height: 240px; background: linear-gradient(135deg,#070718,#181840); }
+    .ph5  { height: 200px; background: linear-gradient(135deg,#0a1a14,#105040); }
+    .ph6  { height: 220px; background: linear-gradient(135deg,#1a0e0a,#603018); }
+    .ph7  { height: 260px; background: linear-gradient(135deg,#0e1a1a,#106060); }
+    .ph8  { height: 200px; background: linear-gradient(135deg,#1a1410,#706020); }
+    .ph9  { height: 180px; background: linear-gradient(135deg,#18060e,#702040); }
+
+    .photo-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(7,7,26,0.85) 0%, transparent 50%);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 16px;
+      opacity: 0;
+      transition: opacity .3s;
+    }
+    .photo-item:hover .photo-overlay { opacity: 1; }
+    .photo-title { font-size: 0.85rem; color: var(--white); font-weight: 500; }
+    .photo-date  { font-size: 0.72rem; color: var(--muted); margin-top: 3px; }
+
+    /* lightbox */
+    #lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0,0,0,0.9);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 18px;
+    }
+    #lightbox.open { display: flex; }
+    .lb-content {
+      width: min(80vw, 560px);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+    .lb-close {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 30px;
+      padding: 8px 24px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all .2s;
+    }
+    .lb-close:hover { color: var(--white); border-color: var(--white); }
+
+    /* ── Footer ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 32px 20px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.78rem;
+      letter-spacing: 1px;
+    }
+    footer strong { color: var(--accent); }
+
+    /* ── Responsive ── */
+    @media (max-width: 860px) {
+      header { padding: 16px 24px; }
+      nav a { margin-left: 18px; font-size: 0.8rem; }
+      .sec { padding: 100px 24px 80px; }
+      .intro-wrap { grid-template-columns: 1fr; justify-items: center; text-align: center; gap: 36px; }
+      .social-row { justify-content: center; }
+      .tags { justify-content: center; }
+      .info-pills { grid-template-columns: 1fr; }
+      .msg-layout { grid-template-columns: 1fr; }
+      .photo-grid { columns: 2; }
+      .anime-grid { grid-template-columns: repeat(2,1fr); }
+    }
+
+    @media (max-width: 520px) {
+      .photo-grid { columns: 1; }
+      .anime-grid { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="sky"></canvas>
+
+<!-- Header -->
+<header>
+  <a class="brand" href="#intro">✦ <em>星辰</em></a>
+  <nav>
+    <a href="#intro">简介</a>
+    <a href="#anime">动漫</a>
+    <a href="#message">留言</a>
+    <a href="#photos">相册</a>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ═══ §1 个人简介 ═══ -->
+  <section id="intro" class="sec">
+    <div class="intro-wrap">
+
+      <div class="avatar-box">
+        <div class="avatar-ring">
+          <div class="avatar-inner">🌌</div>
+        </div>
+        <div class="avatar-badge">在线 ✦</div>
+      </div>
+
+      <div class="intro-text">
+        <p class="sec-label">ABOUT ME</p>
+        <h1>你好，我是<span>星辰</span></h1>
+        <p class="tagline">热爱星空 · 迷恋动漫 · 记录生活</p>
+        <p class="bio">
+          一个喜欢在深夜对着星空发呆的普通人。
+          白天混迹于现实世界，夜晚属于二次元与无尽星河。
+          喜欢用镜头记录那些稍纵即逝的美好，也喜欢在这里留下属于自己的痕迹。
+          <br><br>
+          这里是我的私人小角落，没有什么正经内容，只有真实的我。
+          欢迎你的到来，随手留一句话吧 ✨
+        </p>
+        <div class="tags">
+          <span class="tag">🔭 天文爱好者</span>
+          <span class="tag">🎌 动漫宅</span>
+          <span class="tag">📷 摄影</span>
+          <span class="tag">🎵 音乐</span>
+          <span class="tag">☕ 咖啡成瘾</span>
+          <span class="tag">🌙 夜猫子</span>
+        </div>
+        <div class="social-row">
+          <a href="#message" class="social-btn">✉ 给我留言</a>
+          <a href="#anime" class="social-btn">📺 动漫推荐</a>
+          <a href="#photos" class="social-btn">📷 精选照片</a>
+        </div>
+        <div class="info-pills">
+          <div class="pill">
+            <div class="pill-icon">⭐</div>
+            <div>
+              <div class="pill-label">星座</div>
+              <div class="pill-val">射手座 ♐</div>
+            </div>
+          </div>
+          <div class="pill">
+            <div class="pill-icon">🌍</div>
+            <div>
+              <div class="pill-label">所在城市</div>
+              <div class="pill-val">某个有星星的地方</div>
+            </div>
+          </div>
+          <div class="pill">
+            <div class="pill-icon">🎂</div>
+            <div>
+              <div class="pill-label">加入时间</div>
+              <div class="pill-val">2026年 · 永远在线</div>
+            </div>
+          </div>
+          <div class="pill">
+            <div class="pill-icon">💬</div>
+            <div>
+              <div class="pill-label">状态</div>
+              <div class="pill-val">正在追番中…</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ═══ §2 动漫推荐 ═══ -->
+  <section id="anime" class="sec">
+    <p class="sec-label">ANIME LIST</p>
+    <h2 class="sec-title">我的动漫推荐</h2>
+    <p class="sec-desc">这些是我看过之后觉得绝对值得一刷再刷的作品，每一部都承载着特别的回忆。</p>
+
+    <div class="anime-grid">
+
+      <div class="anime-card">
+        <div class="anime-cover ac1">
+          <div class="anime-score">★ 9.8</div>
+          🌌
+        </div>
+        <div class="anime-body">
+          <div class="anime-name">你的名字。</div>
+          <div class="anime-sub">君の名は。 · 2016</div>
+          <div class="anime-desc">穿越时空的相遇，关于命运与羁绊的美丽故事。每一帧都是艺术。</div>
+          <div class="anime-genres">
+            <span class="genre">治愈</span><span class="genre">奇幻</span><span class="genre">爱情</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="anime-card">
+        <div class="anime-cover ac2">
+          <div class="anime-score">★ 9.5</div>
+          ⚔️
+        </div>
+        <div class="anime-body">
+          <div class="anime-name">进击的巨人</div>
+          <div class="anime-sub">進撃の巨人 · 2013</div>
+          <div class="anime-desc">人类与自由的战争，震撼人心的世界观构筑。一部让人窒息的史诗。</div>
+          <div class="anime-genres">
+            <span class="genre">热血</span><span class="genre">悬疑</span><span class="genre">战斗</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="anime-card">
+        <div class="anime-cover ac3">
+          <div class="anime-score">★ 9.6</div>
+          🌙
+        </div>
+        <div class="anime-body">
+          <div class="anime-name">魔法少女小圆</div>
+          <div class="anime-sub">まどか☆マギカ · 2011</div>
+          <div class="anime-desc">用最黑暗的方式讲述最纯粹的希望。颠覆认知的神作，看到最后才懂。</div>
+          <div class="anime-genres">
+            <span class="genre">魔法</span><span class="genre">黑暗</span><span class="genre">治愈</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="anime-card">
+        <div class="anime-cover ac4">
+          <div class="anime-score">★ 9.3</div>
+          🐉
+        </div>
+        <div class="anime-body">
+          <div class="anime-name">全职猎人</div>
+          <div class="anime-sub">HUNTER×HUNTER · 2011</div>
+          <div class="anime-desc">蝴蝶效应式的宏大叙事，念能力系统堪称漫画史最精密的战斗体系。</div>
+          <div class="anime-genres">
+            <span class="genre">冒险</span><span class="genre">战斗</span><span class="genre">成长</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="anime-card">
+        <div class="anime-cover ac5">
+          <div class="anime-score">★ 9.4</div>
+          🌻
+        </div>
+        <div class="anime-body">
+          <div class="anime-name">龙猫</div>
+          <div class="anime-sub">となりのトトロ · 1988</div>
+          <div class="anime-desc">宫崎骏的永恒名作，跨越年龄的纯粹美好。看的时候感觉自己是个孩子。</div>
+          <div class="anime-genres">
+            <span class="genre">治愈</span><span class="genre">家庭</span><span class="genre">奇幻</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="anime-card">
+        <div class="anime-cover ac6">
+          <div class="anime-score">★ 9.2</div>
+          🌸
+        </div>
+        <div class="anime-body">
+          <div class="anime-name">紫罗兰永恒花园</div>
+          <div class="anime-sub">ヴァイオレット · 2018</div>
+          <div class="anime-desc">关于理解爱的漫长旅程，每一集都能让我落泪。京阿尼的画质神级。</div>
+          <div class="anime-genres">
+            <span class="genre">治愈</span><span class="genre">感动</span><span class="genre">战后</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ═══ §3 留言板 ═══ -->
+  <section id="message" class="sec">
+    <p class="sec-label">GUESTBOOK</p>
+    <h2 class="sec-title">给星辰留言</h2>
+    <p class="sec-desc">路过的你，随手留句话吧。星辰会看到每一条留言 🌟</p>
+
+    <div class="msg-layout">
+
+      <!-- form -->
+      <div class="msg-form">
+        <h3>✍ 写下你想说的话</h3>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>你的昵称 *</label>
+            <input type="text" id="msg-name" placeholder="随便起一个" maxlength="20">
+          </div>
+          <div class="form-group">
+            <label>邮箱（选填）</label>
+            <input type="email" id="msg-email" placeholder="可以不填">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>你的心情</label>
+          <div class="mood-row" id="mood-row">
+            <button class="mood-btn active" data-mood="😊 开心">😊 开心</button>
+            <button class="mood-btn" data-mood="😍 期待">😍 期待</button>
+            <button class="mood-btn" data-mood="😴 困困">😴 困困</button>
+            <button class="mood-btn" data-mood="🤔 沉思">🤔 沉思</button>
+            <button class="mood-btn" data-mood="✨ 无敌">✨ 无敌</button>
+            <button class="mood-btn" data-mood="🌙 深夜">🌙 深夜</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>留言内容 *</label>
+          <textarea id="msg-content" placeholder="想说什么都可以，哪怕只是来打个招呼～" maxlength="300"></textarea>
+        </div>
+
+        <button class="submit-btn" onclick="submitMsg()">发送留言 ✦</button>
+      </div>
+
+      <!-- wall -->
+      <div>
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:16px;" id="wall-count">加载留言中…</p>
+        <div class="msg-wall" id="msg-wall">
+          <div class="wall-empty">
+            <div class="empty-icon">🌌</div>
+            <p>还没有留言，来第一个！</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ═══ §4 精选照片 ═══ -->
+  <section id="photos" class="sec">
+    <p class="sec-label">GALLERY</p>
+    <h2 class="sec-title">精选照片</h2>
+    <p class="sec-desc">用镜头记录下来的那些瞬间，每一张都有故事。（点击查看大图）</p>
+
+    <div class="photo-grid" id="photo-grid">
+
+      <div class="photo-item" onclick="openLb(this)">
+        <div class="photo-mock ph1">🌌</div>
+        <div class="photo-overlay">
+          <div class="photo-title">银河之夜</div>
+          <div class="photo-date">2026-03-14 · 野外观星</div>
+        </div>
+      </div>
+
+      <div class="photo-item" onclick="openLb(this)">
+        <div class="photo-mock ph2">🌅</div>
+        <div class="photo-overlay">
+          <div class="photo-title">傍晚的天空</div>
+          <div class="photo-date">2026-04-22 · 楼顶</div>
+        </div>
+      </div>
+
+      <div class="photo-item" onclick="openLb(this)">
+        <div class="photo-mock ph3">🌃</div>
+        <div class="photo-overlay">
+          <div class="photo-title">城市星轨</div>
+          <div class="photo-date">2026-01-08 · 城郊</div>
+        </div>
+      </div>
+
+      <div class="photo-item" onclick="openLb(this)">
+        <div class="photo-mock ph4">🔭</div>
+        <div class="photo-overlay">
+          <div class="photo-title">观星装备</div>
+          <div class="photo-date">2025-12-31 · 最后一夜</div>
+        </div>
+      </div>
+
+      <div class="photo-item" onclick="openLb(this)">
+        <div class="photo-mock ph5">🌿</div>
+        <div class="photo-overlay">
+          <div class="photo-title">郊外徒步</div>
+          <div class="photo-date">2026-02-18 · 周末</div>
+        </div>
+      </div>
+
+      <div class="photo-item" onclick="openLb(this)">
+        <div class="photo-mock ph6">☕</div>
+        <div class="photo-overlay">
+          <div class="photo-title">深夜咖啡</div>
+          <div class="photo-date">2026-05-01 · 某个深夜</div>
+        </div>
+      </div>
+
+      <div class="photo-item" onclick="openLb(this)">
+        <div class="photo-mock ph7">🌊</div>
+        <div class="photo-overlay">
+          <div class="photo-title">海边夜晚</div>
+          <div class="photo-date">2026-04-05 · 假期</div>
+        </div>
+      </div>
+
+      <div class="photo-item" onclick="openLb(this)">
+        <div class="photo-mock ph8">🏙️</div>
+        <div class="photo-overlay">
+          <div class="photo-title">夜景全景</div>
+          <div class="photo-date">2026-03-29 · 山顶</div>
+        </div>
+      </div>
+
+      <div class="photo-item" onclick="openLb(this)">
+        <div class="photo-mock ph9">🌺</div>
+        <div class="photo-overlay">
+          <div class="photo-title">花田一隅</div>
+          <div class="photo-date">2026-04-12 · 春游</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<!-- Lightbox -->
+<div id="lightbox" onclick="closeLb()">
+  <div class="lb-content" id="lb-content" onclick="event.stopPropagation()"></div>
+  <button class="lb-close" onclick="closeLb()">关闭 ✕</button>
+</div>
+
+<!-- Footer -->
+<footer>
+  <p>✦ &nbsp; <strong>星辰</strong> 的个人小站 &nbsp; ✦</p>
+  <p style="margin-top:6px;opacity:0.5;font-size:0.7rem">用心制作 · 留下痕迹 · 感谢到访</p>
+</footer>
+
+
+<script>
+/* ─── 星空 Canvas ─── */
+const canvas = document.getElementById('sky');
+const ctx = canvas.getContext('2d');
+
+function resize() { canvas.width = innerWidth; canvas.height = innerHeight; }
+resize(); addEventListener('resize', resize);
+
+const stars = Array.from({length:300}, () => ({
+  x: Math.random(), y: Math.random(),
+  r: Math.random()*1.5+0.2,
+  a: Math.random()*0.55+0.15,
+  tw: Math.random()*Math.PI*2,
+  sp: Math.random()*0.015+0.004,
+  c: ['#f0eeff','#c0d0ff','#c8f0e0','#ffd47a','#ffffff'][0|Math.random()*5]
+}));
+
+const shoots = [];
+setInterval(()=>{
+  shoots.push({
+    x: Math.random()*canvas.width, y: Math.random()*canvas.height*0.5,
+    len:70+Math.random()*130, a:1,
+    vx:3+Math.random()*4, vy:1+Math.random()*2
+  });
+},3500);
+
+let t=0;
+(function loop(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  /* bg */
+  const g=ctx.createLinearGradient(0,0,0,canvas.height);
+  g.addColorStop(0,'#07071a'); g.addColorStop(1,'#040410');
+  ctx.fillStyle=g; ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  /* stars */
+  t+=0.007;
+  stars.forEach(s=>{
+    const a = s.a + Math.sin(t*s.sp*40+s.tw)*0.15;
+    ctx.beginPath();
+    ctx.arc(s.x*canvas.width, s.y*canvas.height, s.r, 0, Math.PI*2);
+    const hex = Math.round(Math.max(0,Math.min(1,a))*255).toString(16).padStart(2,'0');
+    ctx.fillStyle = s.c+hex; ctx.fill();
+  });
+
+  /* shooting */
+  for(let i=shoots.length-1;i>=0;i--){
+    const s=shoots[i];
+    const g2=ctx.createLinearGradient(s.x,s.y,s.x-s.len,s.y-s.len*0.4);
+    g2.addColorStop(0,`rgba(255,255,255,${s.a})`);
+    g2.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.beginPath(); ctx.moveTo(s.x,s.y); ctx.lineTo(s.x-s.len,s.y-s.len*0.4);
+    ctx.strokeStyle=g2; ctx.lineWidth=1.5; ctx.stroke();
+    s.x+=s.vx; s.y+=s.vy; s.a-=0.014;
+    if(s.a<=0||s.x>canvas.width+200) shoots.splice(i,1);
+  }
+  requestAnimationFrame(loop);
+})();
+
+/* ─── Nav active ─── */
+const navLinks = document.querySelectorAll('nav a');
+const secs = ['intro','anime','message','photos'].map(id=>document.getElementById(id));
+
+function updateNav(){
+  const mid = scrollY + innerHeight/2;
+  let cur = secs[0];
+  secs.forEach(s=>{ if(s.offsetTop<=mid) cur=s; });
+  navLinks.forEach(a=> a.classList.toggle('active', a.getAttribute('href')==='#'+cur.id));
+}
+addEventListener('scroll', updateNav); updateNav();
+
+/* ─── Mood buttons ─── */
+let selectedMood = '😊 开心';
+document.querySelectorAll('.mood-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedMood = btn.dataset.mood;
+  });
+});
+
+/* ─── Message board ─── */
+const STORAGE_KEY = 'xingchen_messages';
+const COLORS = ['#8c78ff','#60d0ff','#ff9eb5','#ffd47a','#7aeec8','#ff8c70'];
+
+function loadMessages(){
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY))||[]; }
+  catch(e){ return []; }
+}
+function saveMessages(msgs){ localStorage.setItem(STORAGE_KEY, JSON.stringify(msgs)); }
+
+function renderMessages(){
+  const msgs = loadMessages();
+  const wall = document.getElementById('msg-wall');
+  const count = document.getElementById('wall-count');
+  count.textContent = msgs.length ? `共 ${msgs.length} 条留言 ✦` : '还没有留言，快来第一个！';
+  if(!msgs.length){
+    wall.innerHTML = `<div class="wall-empty"><div class="empty-icon">🌌</div><p>还没有留言，来第一个！</p></div>`;
+    return;
+  }
+  wall.innerHTML = msgs.slice().reverse().map((m,i)=>{
+    const col = COLORS[m.colorIdx%COLORS.length];
+    const initial = (m.name||'?')[0].toUpperCase();
+    return `<div class="msg-item" style="animation-delay:${i*0.05}s">
+      <div class="msg-head">
+        <div class="msg-avatar" style="background:${col}">${initial}</div>
+        <div>
+          <div class="msg-name">${esc(m.name)}</div>
+          <div style="font-size:0.72rem;color:var(--muted)">${m.mood}</div>
+        </div>
+        <div class="msg-time">${m.time}</div>
+      </div>
+      <div class="msg-text">${esc(m.content)}</div>
+    </div>`;
+  }).join('');
+}
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function submitMsg(){
+  const name = document.getElementById('msg-name').value.trim();
+  const content = document.getElementById('msg-content').value.trim();
+  if(!name){ alert('请填写昵称 ~'); return; }
+  if(!content){ alert('留言内容不能为空哦 ~'); return; }
+
+  const msgs = loadMessages();
+  const now = new Date();
+  const fmt = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  msgs.push({ name, content, mood:selectedMood, time:fmt, colorIdx: msgs.length });
+  saveMessages(msgs);
+  renderMessages();
+
+  document.getElementById('msg-name').value='';
+  document.getElementById('msg-email').value='';
+  document.getElementById('msg-content').value='';
+  document.getElementById('msg-wall').scrollTop=0;
+}
+
+renderMessages();
+
+/* ─── Lightbox ─── */
+function openLb(el){
+  const mock = el.querySelector('.photo-mock').cloneNode(true);
+  mock.style.width='100%'; mock.style.height='360px'; mock.style.fontSize='5rem'; mock.style.borderRadius='14px';
+  const title = el.querySelector('.photo-title').textContent;
+  const date  = el.querySelector('.photo-date').textContent;
+  const lbc = document.getElementById('lb-content');
+  lbc.innerHTML='';
+  lbc.appendChild(mock);
+  const info = document.createElement('div');
+  info.style.cssText='padding:14px 0;text-align:center';
+  info.innerHTML=`<div style="color:#f0eeff;font-size:1rem;font-weight:600;margin-bottom:4px">${title}</div><div style="color:var(--muted);font-size:0.8rem">${date}</div>`;
+  lbc.appendChild(info);
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeLb(){
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow='';
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeLb(); });
+</script>
+
+</body>
+</html>
