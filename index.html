@@ -291,6 +291,18 @@
       position: relative;
       overflow: hidden;
     }
+    /* 动漫封面真实图片支持 */
+    .anime-cover img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+      z-index: 0;
+    }
+    .anime-cover .anime-score { z-index: 2; }
+    .anime-cover > span { z-index: 0; }
     .anime-cover::after {
       content: '';
       position: absolute;
@@ -493,8 +505,35 @@
     .wall-empty .empty-icon { font-size: 2.4rem; margin-bottom: 10px; }
 
     /* ─────────────────────────────────────────
-       §4  精选照片
+       §4  精选照片（支持上传）
     ───────────────────────────────────────── */
+    #photos .photo-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .photo-count {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .upload-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 10px 22px;
+      border-radius: 30px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border: none;
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: opacity .25s, transform .2s;
+    }
+    .upload-btn:hover { opacity: 0.85; transform: translateY(-2px); }
+
     #photos .photo-grid {
       columns: 3;
       column-gap: 18px;
@@ -511,50 +550,160 @@
     }
     .photo-item:hover { transform: scale(1.02); }
 
-    .photo-mock {
+    .photo-img {
       width: 100%;
+      display: block;
       border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 3.2rem;
-      position: relative;
-      overflow: hidden;
+      object-fit: cover;
+      object-position: center;
+      transition: transform .35s ease;
+      min-height: 160px;
+      max-height: 320px;
     }
-    .photo-mock::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: inherit;
-      opacity: 0;
-      transition: opacity .3s;
-    }
-    .photo-item:hover .photo-mock::after { opacity: 0.2; }
-
-    .ph1  { height: 200px; background: linear-gradient(135deg,#0e0e30,#2a1a60); }
-    .ph2  { height: 260px; background: linear-gradient(135deg,#0a1828,#103860); }
-    .ph3  { height: 180px; background: linear-gradient(135deg,#1a0a28,#500a80); }
-    .ph4  { height: 240px; background: linear-gradient(135deg,#070718,#181840); }
-    .ph5  { height: 200px; background: linear-gradient(135deg,#0a1a14,#105040); }
-    .ph6  { height: 220px; background: linear-gradient(135deg,#1a0e0a,#603018); }
-    .ph7  { height: 260px; background: linear-gradient(135deg,#0e1a1a,#106060); }
-    .ph8  { height: 200px; background: linear-gradient(135deg,#1a1410,#706020); }
-    .ph9  { height: 180px; background: linear-gradient(135deg,#18060e,#702040); }
+    .photo-item:hover .photo-img { transform: scale(1.05); }
 
     .photo-overlay {
       position: absolute;
       inset: 0;
-      background: linear-gradient(to top, rgba(7,7,26,0.85) 0%, transparent 50%);
+      background: linear-gradient(to top, rgba(7,7,26,0.88) 0%, transparent 55%);
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
       padding: 16px;
       opacity: 0;
       transition: opacity .3s;
+      border-radius: 14px;
     }
     .photo-item:hover .photo-overlay { opacity: 1; }
     .photo-title { font-size: 0.85rem; color: var(--white); font-weight: 500; }
     .photo-date  { font-size: 0.72rem; color: var(--muted); margin-top: 3px; }
+
+    /* 删除按钮 */
+    .photo-del {
+      position: absolute;
+      top: 10px; right: 10px;
+      z-index: 10;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.55);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      font-size: 0.8rem;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity .2s, background .2s;
+    }
+    .photo-item:hover .photo-del { opacity: 1; }
+    .photo-del:hover { background: rgba(255,60,60,0.75); border-color: transparent; }
+
+    /* 空状态 */
+    .photo-empty {
+      grid-column: 1/-1;
+      text-align: center;
+      padding: 72px 20px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      border: 2px dashed var(--border);
+      border-radius: 18px;
+      cursor: pointer;
+      transition: border-color .25s;
+    }
+    .photo-empty:hover { border-color: var(--accent); color: var(--accent); }
+    .photo-empty .empty-icon { font-size: 2.8rem; margin-bottom: 12px; display: block; }
+
+    /* 上传弹窗 */
+    #upload-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 900;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    #upload-modal.open { display: flex; }
+    .upload-panel {
+      background: #0e0e28;
+      border: 1px solid var(--border-accent);
+      border-radius: 20px;
+      padding: 36px;
+      width: min(480px, 92vw);
+      animation: fadeUp .25s ease;
+    }
+    .upload-panel h3 {
+      font-size: 1rem;
+      color: var(--white);
+      font-weight: 600;
+      margin-bottom: 24px;
+      letter-spacing: 1px;
+    }
+    .upload-drop {
+      border: 2px dashed var(--border-accent);
+      border-radius: 14px;
+      height: 160px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: border-color .25s, background .25s;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .upload-drop:hover { border-color: var(--accent); background: rgba(140,120,255,0.05); }
+    .upload-drop .drop-icon { font-size: 2.4rem; }
+    .upload-drop input[type=file] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .upload-preview-img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      border-radius: 10px;
+      display: none;
+      margin-bottom: 20px;
+    }
+    .upload-panel .form-group { margin-bottom: 14px; }
+    .upload-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .btn-cancel {
+      flex: 1;
+      padding: 11px;
+      border-radius: 30px;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-cancel:hover { border-color: var(--white); color: var(--white); }
+    .btn-save {
+      flex: 2;
+      padding: 11px;
+      border-radius: 30px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border: none;
+      color: #fff;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .2s;
+    }
+    .btn-save:hover { opacity: 0.85; }
 
     /* lightbox */
     #lightbox {
@@ -719,60 +868,60 @@
 
       <div class="anime-card">
         <div class="anime-cover ac1">
-          <div class="anime-score">★ 9.8</div>
-          🌌
+          <div class="anime-score">★ 9.6</div>
+          🌍
         </div>
         <div class="anime-body">
-          <div class="anime-name">你的名字。</div>
-          <div class="anime-sub">君の名は。 · 2016</div>
-          <div class="anime-desc">穿越时空的相遇，关于命运与羁绊的美丽故事。每一帧都是艺术。</div>
+          <div class="anime-name">re:从零开始的异世界生活</div>
+          <div class="anime-sub">Re:ゼロから始める異世界生活 · 2016</div>
+          <div class="anime-desc">死亡回归的残酷与坚持，昂扬的精神力令人动容。看完一口气刷完全集。</div>
           <div class="anime-genres">
-            <span class="genre">治愈</span><span class="genre">奇幻</span><span class="genre">爱情</span>
+            <span class="genre">异世界</span><span class="genre">热血</span><span class="genre">悬疑</span>
           </div>
         </div>
       </div>
 
       <div class="anime-card">
         <div class="anime-cover ac2">
-          <div class="anime-score">★ 9.5</div>
-          ⚔️
+          <div class="anime-score">★ 9.7</div>
+          ⚗️
         </div>
         <div class="anime-body">
-          <div class="anime-name">进击的巨人</div>
-          <div class="anime-sub">進撃の巨人 · 2013</div>
-          <div class="anime-desc">人类与自由的战争，震撼人心的世界观构筑。一部让人窒息的史诗。</div>
+          <div class="anime-name">葬送的芙莉莲</div>
+          <div class="anime-sub">葬送のフリーレン · 2023</div>
+          <div class="anime-desc">以千年精灵的视角回望人生，关于时间、告别与记忆的旷世之作。</div>
           <div class="anime-genres">
-            <span class="genre">热血</span><span class="genre">悬疑</span><span class="genre">战斗</span>
+            <span class="genre">奇幻</span><span class="genre">治愈</span><span class="genre">感动</span>
           </div>
         </div>
       </div>
 
       <div class="anime-card">
         <div class="anime-cover ac3">
-          <div class="anime-score">★ 9.6</div>
-          🌙
+          <div class="anime-score">★ 9.9</div>
+          ⏳
         </div>
         <div class="anime-body">
-          <div class="anime-name">魔法少女小圆</div>
-          <div class="anime-sub">まどか☆マギカ · 2011</div>
-          <div class="anime-desc">用最黑暗的方式讲述最纯粹的希望。颠覆认知的神作，看到最后才懂。</div>
+          <div class="anime-name">命运石之门</div>
+          <div class="anime-sub">シュタインズ・ゲート · 2011</div>
+          <div class="anime-desc">神级科幻剧情，时间线交织的悬疑与感动。每一次El Psy Kongroo都让人起鸡皮疙瘩。</div>
           <div class="anime-genres">
-            <span class="genre">魔法</span><span class="genre">黑暗</span><span class="genre">治愈</span>
+            <span class="genre">科幻</span><span class="genre">悬疑</span><span class="genre">时间旅行</span>
           </div>
         </div>
       </div>
 
       <div class="anime-card">
         <div class="anime-cover ac4">
-          <div class="anime-score">★ 9.3</div>
-          🐉
+          <div class="anime-score">★ 9.5</div>
+          🌊
         </div>
         <div class="anime-body">
-          <div class="anime-name">全职猎人</div>
-          <div class="anime-sub">HUNTER×HUNTER · 2011</div>
-          <div class="anime-desc">蝴蝶效应式的宏大叙事，念能力系统堪称漫画史最精密的战斗体系。</div>
+          <div class="anime-name">夏日重现</div>
+          <div class="anime-sub">サマータイムレンダ · 2022</div>
+          <div class="anime-desc">孤岛密室与时间循环完美融合，节奏紧凑停不下来，堪称近年最佳悬疑动漫。</div>
           <div class="anime-genres">
-            <span class="genre">冒险</span><span class="genre">战斗</span><span class="genre">成长</span>
+            <span class="genre">悬疑</span><span class="genre">恐怖</span><span class="genre">热血</span>
           </div>
         </div>
       </div>
@@ -780,29 +929,29 @@
       <div class="anime-card">
         <div class="anime-cover ac5">
           <div class="anime-score">★ 9.4</div>
-          🌻
+          🕵️
         </div>
         <div class="anime-body">
-          <div class="anime-name">龙猫</div>
-          <div class="anime-sub">となりのトトロ · 1988</div>
-          <div class="anime-desc">宫崎骏的永恒名作，跨越年龄的纯粹美好。看的时候感觉自己是个孩子。</div>
+          <div class="anime-name">间谍过家家</div>
+          <div class="anime-sub">SPY×FAMILY · 2022</div>
+          <div class="anime-desc">温馨爆笑的伪装家庭，阿尼亚的反应永远是笑点担当。治愈系佳作首选。</div>
           <div class="anime-genres">
-            <span class="genre">治愈</span><span class="genre">家庭</span><span class="genre">奇幻</span>
+            <span class="genre">喜剧</span><span class="genre">治愈</span><span class="genre">间谍</span>
           </div>
         </div>
       </div>
 
       <div class="anime-card">
         <div class="anime-cover ac6">
-          <div class="anime-score">★ 9.2</div>
-          🌸
+          <div class="anime-score">★ 9.3</div>
+          🦊
         </div>
         <div class="anime-body">
-          <div class="anime-name">紫罗兰永恒花园</div>
-          <div class="anime-sub">ヴァイオレット · 2018</div>
-          <div class="anime-desc">关于理解爱的漫长旅程，每一集都能让我落泪。京阿尼的画质神级。</div>
+          <div class="anime-name">狐妖小红娘</div>
+          <div class="anime-sub">狐妖小红娘 · 2015</div>
+          <div class="anime-desc">国漫骄傲，涂山苏苏的"王权富贵"深入人心，东方浪漫与爱情完美交融。</div>
           <div class="anime-genres">
-            <span class="genre">治愈</span><span class="genre">感动</span><span class="genre">战后</span>
+            <span class="genre">国漫</span><span class="genre">爱情</span><span class="genre">奇幻</span>
           </div>
         </div>
       </div>
@@ -875,84 +1024,46 @@
     <h2 class="sec-title">精选照片</h2>
     <p class="sec-desc">用镜头记录下来的那些瞬间，每一张都有故事。（点击查看大图）</p>
 
+    <div class="photo-toolbar">
+      <span class="photo-count" id="photo-count">共 0 张照片</span>
+      <button class="upload-btn" onclick="openUpload()">＋ 添加照片</button>
+    </div>
+
     <div class="photo-grid" id="photo-grid">
-
-      <div class="photo-item" onclick="openLb(this)">
-        <div class="photo-mock ph1">🌌</div>
-        <div class="photo-overlay">
-          <div class="photo-title">银河之夜</div>
-          <div class="photo-date">2026-03-14 · 野外观星</div>
-        </div>
-      </div>
-
-      <div class="photo-item" onclick="openLb(this)">
-        <div class="photo-mock ph2">🌅</div>
-        <div class="photo-overlay">
-          <div class="photo-title">傍晚的天空</div>
-          <div class="photo-date">2026-04-22 · 楼顶</div>
-        </div>
-      </div>
-
-      <div class="photo-item" onclick="openLb(this)">
-        <div class="photo-mock ph3">🌃</div>
-        <div class="photo-overlay">
-          <div class="photo-title">城市星轨</div>
-          <div class="photo-date">2026-01-08 · 城郊</div>
-        </div>
-      </div>
-
-      <div class="photo-item" onclick="openLb(this)">
-        <div class="photo-mock ph4">🔭</div>
-        <div class="photo-overlay">
-          <div class="photo-title">观星装备</div>
-          <div class="photo-date">2025-12-31 · 最后一夜</div>
-        </div>
-      </div>
-
-      <div class="photo-item" onclick="openLb(this)">
-        <div class="photo-mock ph5">🌿</div>
-        <div class="photo-overlay">
-          <div class="photo-title">郊外徒步</div>
-          <div class="photo-date">2026-02-18 · 周末</div>
-        </div>
-      </div>
-
-      <div class="photo-item" onclick="openLb(this)">
-        <div class="photo-mock ph6">☕</div>
-        <div class="photo-overlay">
-          <div class="photo-title">深夜咖啡</div>
-          <div class="photo-date">2026-05-01 · 某个深夜</div>
-        </div>
-      </div>
-
-      <div class="photo-item" onclick="openLb(this)">
-        <div class="photo-mock ph7">🌊</div>
-        <div class="photo-overlay">
-          <div class="photo-title">海边夜晚</div>
-          <div class="photo-date">2026-04-05 · 假期</div>
-        </div>
-      </div>
-
-      <div class="photo-item" onclick="openLb(this)">
-        <div class="photo-mock ph8">🏙️</div>
-        <div class="photo-overlay">
-          <div class="photo-title">夜景全景</div>
-          <div class="photo-date">2026-03-29 · 山顶</div>
-        </div>
-      </div>
-
-      <div class="photo-item" onclick="openLb(this)">
-        <div class="photo-mock ph9">🌺</div>
-        <div class="photo-overlay">
-          <div class="photo-title">花田一隅</div>
-          <div class="photo-date">2026-04-12 · 春游</div>
-        </div>
-      </div>
-
+      <!-- 动态渲染 -->
     </div>
   </section>
 
 </main>
+
+<!-- 上传弹窗 -->
+<div id="upload-modal" onclick="closeUploadOutside(event)">
+  <div class="upload-panel">
+    <h3>📷 上传照片</h3>
+
+    <div class="upload-drop" id="upload-drop">
+      <span class="drop-icon">🖼️</span>
+      <span>点击选择图片，或拖拽到此处</span>
+      <span style="font-size:0.75rem;opacity:0.6">支持 JPG / PNG / WEBP / GIF</span>
+      <input type="file" id="file-input" accept="image/*" onchange="previewFile(this)">
+    </div>
+    <img id="upload-preview" class="upload-preview-img" alt="预览">
+
+    <div class="form-group">
+      <label>照片标题</label>
+      <input type="text" id="upload-title" placeholder="给这张照片起个名字" maxlength="30">
+    </div>
+    <div class="form-group">
+      <label>备注（地点 / 日期等）</label>
+      <input type="text" id="upload-note" placeholder="例：2026-05-20 · 某个地方" maxlength="40">
+    </div>
+
+    <div class="upload-actions">
+      <button class="btn-cancel" onclick="closeUpload()">取消</button>
+      <button class="btn-save" onclick="savePhoto()">保存到相册 ✦</button>
+    </div>
+  </div>
+</div>
 
 <!-- Lightbox -->
 <div id="lightbox" onclick="closeLb()">
@@ -1107,27 +1218,144 @@ function submitMsg(){
 
 renderMessages();
 
-/* ─── Lightbox ─── */
-function openLb(el){
-  const mock = el.querySelector('.photo-mock').cloneNode(true);
-  mock.style.width='100%'; mock.style.height='360px'; mock.style.fontSize='5rem'; mock.style.borderRadius='14px';
-  const title = el.querySelector('.photo-title').textContent;
-  const date  = el.querySelector('.photo-date').textContent;
+/* ─── 精选照片（上传 / 存储 / 渲染） ─── */
+const PHOTO_KEY = 'xingchen_photos';
+
+function loadPhotos(){
+  try { return JSON.parse(localStorage.getItem(PHOTO_KEY)) || []; }
+  catch(e){ return []; }
+}
+function savePhotos(arr){ localStorage.setItem(PHOTO_KEY, JSON.stringify(arr)); }
+
+function renderPhotos(){
+  const photos = loadPhotos();
+  const grid = document.getElementById('photo-grid');
+  const count = document.getElementById('photo-count');
+  count.textContent = photos.length ? `共 ${photos.length} 张照片` : '还没有照片';
+
+  if(!photos.length){
+    grid.innerHTML = `<div class="photo-empty" onclick="openUpload()">
+      <span class="empty-icon">📷</span>
+      点击这里上传第一张照片
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = photos.map((p, i) => `
+    <div class="photo-item" onclick="openLb(${i})">
+      <img class="photo-img" src="${p.src}" alt="${esc(p.title)}">
+      <div class="photo-overlay">
+        <div class="photo-title">${esc(p.title)}</div>
+        <div class="photo-date">${esc(p.note)}</div>
+      </div>
+      <button class="photo-del" onclick="delPhoto(event,${i})" title="删除">✕</button>
+    </div>
+  `).join('');
+}
+
+function delPhoto(e, i){
+  e.stopPropagation();
+  if(!confirm('确定删除这张照片吗？')) return;
+  const photos = loadPhotos();
+  photos.splice(i, 1);
+  savePhotos(photos);
+  renderPhotos();
+}
+
+/* ─── 上传弹窗 ─── */
+let pendingDataUrl = null;
+
+function openUpload(){
+  pendingDataUrl = null;
+  document.getElementById('upload-preview').style.display = 'none';
+  document.getElementById('upload-drop').style.display = 'flex';
+  document.getElementById('upload-title').value = '';
+  document.getElementById('upload-note').value = '';
+  document.getElementById('file-input').value = '';
+  document.getElementById('upload-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeUpload(){
+  document.getElementById('upload-modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function closeUploadOutside(e){
+  if(e.target === document.getElementById('upload-modal')) closeUpload();
+}
+
+function previewFile(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    pendingDataUrl = e.target.result;
+    const prev = document.getElementById('upload-preview');
+    prev.src = pendingDataUrl;
+    prev.style.display = 'block';
+    document.getElementById('upload-drop').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function savePhoto(){
+  if(!pendingDataUrl){ alert('请先选择一张图片 ~'); return; }
+  const title = document.getElementById('upload-title').value.trim() || '无标题';
+  const note  = document.getElementById('upload-note').value.trim() || formatNow();
+  const photos = loadPhotos();
+  photos.push({ src: pendingDataUrl, title, note });
+  savePhotos(photos);
+  renderPhotos();
+  closeUpload();
+}
+
+function formatNow(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+/* ─── Lightbox（适配照片上传版本） ─── */
+function openLb(index){
+  const photos = loadPhotos();
+  const p = photos[index];
+  if(!p) return;
   const lbc = document.getElementById('lb-content');
-  lbc.innerHTML='';
-  lbc.appendChild(mock);
-  const info = document.createElement('div');
-  info.style.cssText='padding:14px 0;text-align:center';
-  info.innerHTML=`<div style="color:#f0eeff;font-size:1rem;font-weight:600;margin-bottom:4px">${title}</div><div style="color:var(--muted);font-size:0.8rem">${date}</div>`;
-  lbc.appendChild(info);
+  lbc.innerHTML = `
+    <img src="${p.src}" alt="${esc(p.title)}"
+         style="width:100%;max-height:70vh;object-fit:contain;border-radius:14px;display:block;">
+    <div style="padding:14px 0;text-align:center">
+      <div style="color:#f0eeff;font-size:1rem;font-weight:600;margin-bottom:4px">${esc(p.title)}</div>
+      <div style="color:var(--muted);font-size:0.8rem">${esc(p.note)}</div>
+    </div>
+  `;
   document.getElementById('lightbox').classList.add('open');
-  document.body.style.overflow='hidden';
+  document.body.style.overflow = 'hidden';
 }
 function closeLb(){
   document.getElementById('lightbox').classList.remove('open');
-  document.body.style.overflow='';
+  document.body.style.overflow = '';
 }
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeLb(); });
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape'){ closeLb(); closeUpload(); }
+});
+
+/* 拖拽上传支持 */
+const dropZone = document.getElementById('upload-drop');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.borderColor = 'var(--accent)'; });
+dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = ''; });
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.style.borderColor = '';
+  const file = e.dataTransfer.files[0];
+  if(file && file.type.startsWith('image/')){
+    const fi = document.getElementById('file-input');
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    fi.files = dt.files;
+    previewFile(fi);
+  }
+});
+
+renderPhotos();
 </script>
 
 </body>
