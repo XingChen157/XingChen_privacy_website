@@ -30,14 +30,47 @@
       line-height: 1.75;
       overflow-x: hidden;
     }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: rgba(7,7,26,0.5);
+      z-index: 0;
+      pointer-events: none;
+    }
 
-    /* ── Canvas ── */
-    #sky {
+    /* ── Background Image ── */
+    #bg {
       position: fixed;
       inset: 0;
       z-index: 0;
       pointer-events: none;
+      background: url('images/bg.jpg') center center / cover no-repeat;
     }
+    
+    /* 粒子特效层 */
+    #particles {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .particle {
+      position: absolute;
+      width: 4px; height: 4px;
+      background: rgba(255,255,255,0.6);
+      border-radius: 50%;
+      animation: float-up linear infinite;
+    }
+    @keyframes float-up {
+      0% { transform: translateY(100vh) scale(0); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+    }
+    .particle:nth-child(odd) { background: rgba(140,120,255,0.7); }
+    .particle:nth-child(3n) { background: rgba(96,208,255,0.7); }
 
     /* ── Nav ── */
     header {
@@ -86,10 +119,13 @@
 
     /* ── Section shell ── */
     .sec {
-      min-height: 100vh;
-      padding: 120px 64px 100px;
+      padding: 60px 64px;
       max-width: 1080px;
-      margin: 0 auto;
+      margin: 0 auto 40px;
+      background: rgba(7,7,26,0.65);
+      border-radius: 20px;
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.08);
     }
 
     .sec-label {
@@ -107,6 +143,7 @@
       margin-bottom: 10px;
       position: relative;
       display: inline-block;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
     }
     .sec-title::after {
       content: '';
@@ -128,18 +165,35 @@
     ───────────────────────────────────────── */
     #intro {
       display: flex;
-      align-items: center;
-      min-height: 100vh;
-      padding-top: 100px;
-      padding-bottom: 80px;
+      align-items: flex-start;
+      padding-top: 350px;
+      padding-bottom: 0;
+      margin-bottom: 40px;
+      background: transparent !important;
+      backdrop-filter: none !important;
+      border: none !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
     }
 
     .intro-wrap {
       display: grid;
       grid-template-columns: auto 1fr;
       gap: 72px;
-      align-items: center;
+      align-items: start;
       width: 100%;
+      padding: 48px;
+      background: rgba(7,7,26,0.65);
+      border-radius: 20px;
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.08);
+      margin-bottom: 0;
+    }
+
+    /* 头像区域透明 */
+    .avatar-box {
+      position: relative;
+      flex-shrink: 0;
     }
 
     /* avatar */
@@ -152,16 +206,17 @@
       border-radius: 50%;
       background: conic-gradient(from 0deg, var(--accent), var(--accent2), var(--accent3), var(--accent));
       padding: 2px;
-      animation: spin 8s linear infinite;
     }
     .avatar-inner {
       width: 100%; height: 100%;
       border-radius: 50%;
       background: var(--bg);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 5rem;
+      overflow: hidden;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .avatar-inner img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
 
     .avatar-badge {
       position: absolute;
@@ -183,6 +238,7 @@
       letter-spacing: 4px;
       line-height: 1.2;
       margin-bottom: 14px;
+      text-shadow: 0 2px 15px rgba(0,0,0,0.6);
     }
     .intro-text h1 span {
       background: linear-gradient(90deg,var(--accent),var(--accent2));
@@ -741,10 +797,14 @@
       z-index: 1;
       text-align: center;
       padding: 32px 20px;
-      border-top: 1px solid var(--border);
+      background: rgba(7,7,26,0.65);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(255,255,255,0.08);
       color: var(--muted);
       font-size: 0.78rem;
       letter-spacing: 1px;
+      margin: 0 20px 20px;
+      border-radius: 20px;
     }
     footer strong { color: var(--accent); }
 
@@ -771,7 +831,8 @@
 </head>
 <body>
 
-<canvas id="sky"></canvas>
+<div id="bg"></div>
+<div id="particles"></div>
 
 <!-- Header -->
 <header>
@@ -792,7 +853,9 @@
 
       <div class="avatar-box">
         <div class="avatar-ring">
-          <div class="avatar-inner">🌌</div>
+          <div class="avatar-inner">
+            <img src="head portrait/head portrait.jpg" alt="头像">
+          </div>
         </div>
         <div class="avatar-badge">在线 ✦</div>
       </div>
@@ -802,19 +865,14 @@
         <h1>你好，我是<span>星辰</span></h1>
         <p class="tagline">热爱星空 · 迷恋动漫 · 记录生活</p>
         <p class="bio">
-          一个喜欢在深夜对着星空发呆的普通人。
-          白天混迹于现实世界，夜晚属于二次元与无尽星河。
-          喜欢用镜头记录那些稍纵即逝的美好，也喜欢在这里留下属于自己的痕迹。
-          <br><br>
-          这里是我的私人小角落，没有什么正经内容，只有真实的我。
-          欢迎你的到来，随手留一句话吧 ✨
+          这里是我的个人网站，欢迎大家积极留言 ✨
         </p>
         <div class="tags">
-          <span class="tag">🔭 天文爱好者</span>
+          <span class="tag">🎵 学习</span>
+          <span class="tag">🎮 游戏</span>
+          <span class="tag">🎸 吉他</span>
           <span class="tag">🎌 动漫宅</span>
-          <span class="tag">📷 摄影</span>
           <span class="tag">🎵 音乐</span>
-          <span class="tag">☕ 咖啡成瘾</span>
           <span class="tag">🌙 夜猫子</span>
         </div>
         <div class="social-row">
@@ -834,7 +892,7 @@
             <div class="pill-icon">🌍</div>
             <div>
               <div class="pill-label">所在城市</div>
-              <div class="pill-val">某个有星星的地方</div>
+              <div class="pill-val">湖北武汉</div>
             </div>
           </div>
           <div class="pill">
@@ -862,14 +920,14 @@
   <section id="anime" class="sec">
     <p class="sec-label">ANIME LIST</p>
     <h2 class="sec-title">我的动漫推荐</h2>
-    <p class="sec-desc">这些是我看过之后觉得绝对值得一刷再刷的作品，每一部都承载着特别的回忆。</p>
+    <p class="sec-desc">全都是神作，毋庸置疑。</p>
 
     <div class="anime-grid">
 
       <div class="anime-card">
         <div class="anime-cover ac1">
           <div class="anime-score">★ 9.6</div>
-          🌍
+          <img src="images/anime/rezero.png" alt="re:从零开始的异世界生活">
         </div>
         <div class="anime-body">
           <div class="anime-name">re:从零开始的异世界生活</div>
@@ -884,7 +942,7 @@
       <div class="anime-card">
         <div class="anime-cover ac2">
           <div class="anime-score">★ 9.7</div>
-          ⚗️
+          <img src="images/anime/frieren.png" alt="葬送的芙莉莲">
         </div>
         <div class="anime-body">
           <div class="anime-name">葬送的芙莉莲</div>
@@ -899,7 +957,7 @@
       <div class="anime-card">
         <div class="anime-cover ac3">
           <div class="anime-score">★ 9.9</div>
-          ⏳
+          <img src="images/anime/steinsgate.png" alt="命运石之门">
         </div>
         <div class="anime-body">
           <div class="anime-name">命运石之门</div>
@@ -914,7 +972,7 @@
       <div class="anime-card">
         <div class="anime-cover ac4">
           <div class="anime-score">★ 9.5</div>
-          🌊
+          <img src="images/anime/summertimereading.png" alt="夏日重现">
         </div>
         <div class="anime-body">
           <div class="anime-name">夏日重现</div>
@@ -929,7 +987,7 @@
       <div class="anime-card">
         <div class="anime-cover ac5">
           <div class="anime-score">★ 9.4</div>
-          🕵️
+          <img src="images/anime/spyxfamily.png" alt="间谍过家家">
         </div>
         <div class="anime-body">
           <div class="anime-name">间谍过家家</div>
@@ -944,7 +1002,7 @@
       <div class="anime-card">
         <div class="anime-cover ac6">
           <div class="anime-score">★ 9.3</div>
-          🦊
+          <img src="images/anime/foxspirit.png" alt="狐妖小红娘">
         </div>
         <div class="anime-body">
           <div class="anime-name">狐妖小红娘</div>
@@ -1026,7 +1084,7 @@
 
     <div class="photo-toolbar">
       <span class="photo-count" id="photo-count">共 0 张照片</span>
-      <button class="upload-btn" onclick="openUpload()">＋ 添加照片</button>
+      <button class="upload-btn" id="upload-btn-inner" onclick="openUpload()">＋ 添加照片</button>
     </div>
 
     <div class="photo-grid" id="photo-grid">
@@ -1049,18 +1107,9 @@
     </div>
     <img id="upload-preview" class="upload-preview-img" alt="预览">
 
-    <div class="form-group">
-      <label>照片标题</label>
-      <input type="text" id="upload-title" placeholder="给这张照片起个名字" maxlength="30">
-    </div>
-    <div class="form-group">
-      <label>备注（地点 / 日期等）</label>
-      <input type="text" id="upload-note" placeholder="例：2026-05-20 · 某个地方" maxlength="40">
-    </div>
-
     <div class="upload-actions">
       <button class="btn-cancel" onclick="closeUpload()">取消</button>
-      <button class="btn-save" onclick="savePhoto()">保存到相册 ✦</button>
+      <button class="btn-save" id="btn-confirm-upload" onclick="confirmUpload()">直接上传 ✦</button>
     </div>
   </div>
 </div>
@@ -1079,63 +1128,27 @@
 
 
 <script>
-/* ─── 星空 Canvas ─── */
-const canvas = document.getElementById('sky');
-const ctx = canvas.getContext('2d');
+/* ─── 粒子特效 ─── */
+const particlesContainer = document.getElementById('particles');
+const PARTICLE_COUNT = 50;
 
-function resize() { canvas.width = innerWidth; canvas.height = innerHeight; }
-resize(); addEventListener('resize', resize);
+function createParticle(){
+  const p = document.createElement('div');
+  p.className = 'particle';
+  const size = Math.random() * 6 + 2;
+  p.style.width = size + 'px';
+  p.style.height = size + 'px';
+  p.style.left = Math.random() * 100 + 'vw';
+  p.style.animationDuration = (Math.random() * 10 + 8) + 's';
+  p.style.animationDelay = Math.random() * 5 + 's';
+  particlesContainer.appendChild(p);
+  setTimeout(() => p.remove(), 18000);
+}
 
-const stars = Array.from({length:300}, () => ({
-  x: Math.random(), y: Math.random(),
-  r: Math.random()*1.5+0.2,
-  a: Math.random()*0.55+0.15,
-  tw: Math.random()*Math.PI*2,
-  sp: Math.random()*0.015+0.004,
-  c: ['#f0eeff','#c0d0ff','#c8f0e0','#ffd47a','#ffffff'][0|Math.random()*5]
-}));
-
-const shoots = [];
-setInterval(()=>{
-  shoots.push({
-    x: Math.random()*canvas.width, y: Math.random()*canvas.height*0.5,
-    len:70+Math.random()*130, a:1,
-    vx:3+Math.random()*4, vy:1+Math.random()*2
-  });
-},3500);
-
-let t=0;
-(function loop(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  /* bg */
-  const g=ctx.createLinearGradient(0,0,0,canvas.height);
-  g.addColorStop(0,'#07071a'); g.addColorStop(1,'#040410');
-  ctx.fillStyle=g; ctx.fillRect(0,0,canvas.width,canvas.height);
-
-  /* stars */
-  t+=0.007;
-  stars.forEach(s=>{
-    const a = s.a + Math.sin(t*s.sp*40+s.tw)*0.15;
-    ctx.beginPath();
-    ctx.arc(s.x*canvas.width, s.y*canvas.height, s.r, 0, Math.PI*2);
-    const hex = Math.round(Math.max(0,Math.min(1,a))*255).toString(16).padStart(2,'0');
-    ctx.fillStyle = s.c+hex; ctx.fill();
-  });
-
-  /* shooting */
-  for(let i=shoots.length-1;i>=0;i--){
-    const s=shoots[i];
-    const g2=ctx.createLinearGradient(s.x,s.y,s.x-s.len,s.y-s.len*0.4);
-    g2.addColorStop(0,`rgba(255,255,255,${s.a})`);
-    g2.addColorStop(1,'rgba(255,255,255,0)');
-    ctx.beginPath(); ctx.moveTo(s.x,s.y); ctx.lineTo(s.x-s.len,s.y-s.len*0.4);
-    ctx.strokeStyle=g2; ctx.lineWidth=1.5; ctx.stroke();
-    s.x+=s.vx; s.y+=s.vy; s.a-=0.014;
-    if(s.a<=0||s.x>canvas.width+200) shoots.splice(i,1);
-  }
-  requestAnimationFrame(loop);
-})();
+// 初始粒子
+for(let i = 0; i < PARTICLE_COUNT; i++) createParticle();
+// 持续生成
+setInterval(createParticle, 300);
 
 /* ─── Nav active ─── */
 const navLinks = document.querySelectorAll('nav a');
@@ -1220,6 +1233,7 @@ renderMessages();
 
 /* ─── 精选照片（上传 / 存储 / 渲染） ─── */
 const PHOTO_KEY = 'xingchen_photos';
+const MAX_PHOTOS = 9;
 
 function loadPhotos(){
   try { return JSON.parse(localStorage.getItem(PHOTO_KEY)) || []; }
@@ -1231,7 +1245,9 @@ function renderPhotos(){
   const photos = loadPhotos();
   const grid = document.getElementById('photo-grid');
   const count = document.getElementById('photo-count');
-  count.textContent = photos.length ? `共 ${photos.length} 张照片` : '还没有照片';
+  const btn = document.getElementById('upload-btn-inner');
+  count.textContent = photos.length ? `共 ${photos.length} / ${MAX_PHOTOS} 张` : '还没有照片';
+  btn.textContent = photos.length >= MAX_PHOTOS ? '已满 ✦' : '＋ 添加照片';
 
   if(!photos.length){
     grid.innerHTML = `<div class="photo-empty" onclick="openUpload()">
@@ -1243,11 +1259,7 @@ function renderPhotos(){
 
   grid.innerHTML = photos.map((p, i) => `
     <div class="photo-item" onclick="openLb(${i})">
-      <img class="photo-img" src="${p.src}" alt="${esc(p.title)}">
-      <div class="photo-overlay">
-        <div class="photo-title">${esc(p.title)}</div>
-        <div class="photo-date">${esc(p.note)}</div>
-      </div>
+      <img class="photo-img" src="${p.src}" alt="照片">
       <button class="photo-del" onclick="delPhoto(event,${i})" title="删除">✕</button>
     </div>
   `).join('');
@@ -1266,11 +1278,11 @@ function delPhoto(e, i){
 let pendingDataUrl = null;
 
 function openUpload(){
+  const photos = loadPhotos();
+  if(photos.length >= MAX_PHOTOS){ alert(`最多只能上传 ${MAX_PHOTOS} 张照片 ~`); return; }
   pendingDataUrl = null;
   document.getElementById('upload-preview').style.display = 'none';
   document.getElementById('upload-drop').style.display = 'flex';
-  document.getElementById('upload-title').value = '';
-  document.getElementById('upload-note').value = '';
   document.getElementById('file-input').value = '';
   document.getElementById('upload-modal').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -1297,35 +1309,25 @@ function previewFile(input){
   reader.readAsDataURL(file);
 }
 
-function savePhoto(){
+function confirmUpload(){
   if(!pendingDataUrl){ alert('请先选择一张图片 ~'); return; }
-  const title = document.getElementById('upload-title').value.trim() || '无标题';
-  const note  = document.getElementById('upload-note').value.trim() || formatNow();
   const photos = loadPhotos();
-  photos.push({ src: pendingDataUrl, title, note });
+  if(photos.length >= MAX_PHOTOS){ alert(`最多只能上传 ${MAX_PHOTOS} 张照片 ~`); closeUpload(); return; }
+  photos.push({ src: pendingDataUrl });
   savePhotos(photos);
   renderPhotos();
   closeUpload();
 }
 
-function formatNow(){
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-
-/* ─── Lightbox（适配照片上传版本） ─── */
+/* ─── Lightbox ─── */
 function openLb(index){
   const photos = loadPhotos();
   const p = photos[index];
   if(!p) return;
   const lbc = document.getElementById('lb-content');
   lbc.innerHTML = `
-    <img src="${p.src}" alt="${esc(p.title)}"
-         style="width:100%;max-height:70vh;object-fit:contain;border-radius:14px;display:block;">
-    <div style="padding:14px 0;text-align:center">
-      <div style="color:#f0eeff;font-size:1rem;font-weight:600;margin-bottom:4px">${esc(p.title)}</div>
-      <div style="color:var(--muted);font-size:0.8rem">${esc(p.note)}</div>
-    </div>
+    <img src="${p.src}" alt="照片"
+         style="width:100%;max-height:75vh;object-fit:contain;border-radius:14px;display:block;">
   `;
   document.getElementById('lightbox').classList.add('open');
   document.body.style.overflow = 'hidden';
