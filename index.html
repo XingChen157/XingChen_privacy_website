@@ -493,6 +493,38 @@
       color: var(--white);
     }
 
+    /* 性别选择 */
+    .gender-row {
+      display: flex;
+      gap: 12px;
+    }
+    .gender-btn {
+      width: 44px;
+      height: 44px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      font-size: 0.9rem;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .25s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+    .gender-btn .icon {
+      font-size: 1.25rem;
+      line-height: 1;
+    }
+    .gender-btn.active, .gender-btn:hover {
+      border-color: var(--accent2);
+      color: var(--white);
+      background: rgba(96,208,255,0.12);
+      transform: scale(1.05);
+    }
+
     .submit-btn {
       width: 100%;
       padding: 13px;
@@ -1041,8 +1073,11 @@
             <input type="text" id="msg-name" placeholder="随便起一个" maxlength="20">
           </div>
           <div class="form-group">
-            <label>邮箱（选填）</label>
-            <input type="email" id="msg-email" placeholder="可以不填">
+            <label>性别</label>
+            <div class="gender-row" id="gender-row">
+              <button class="gender-btn active" data-gender="male"><span class="icon">♂</span>男</button>
+              <button class="gender-btn" data-gender="female"><span class="icon">♀</span>女</button>
+            </div>
           </div>
         </div>
 
@@ -1179,6 +1214,16 @@ document.querySelectorAll('.mood-btn').forEach(btn=>{
   });
 });
 
+/* ─── Gender buttons ─── */
+let selectedGender = 'male';
+document.querySelectorAll('.gender-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.gender-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedGender = btn.dataset.gender;
+  });
+});
+
 /* ─── Message board (GitHub Issues API 版) ─── */
 /* ═══════════════════════════════════════════════════════
    📋 配置说明（共 3 步，5 分钟搞定）:
@@ -1267,11 +1312,13 @@ async function renderMessages(showLoading = false){
   wall.innerHTML = msgs.slice().reverse().map((m, i) => {
     const col = COLORS[m.colorIdx % COLORS.length];
     const initial = (m.name || '?')[0].toUpperCase();
+    const genderIcon = m.gender === 'female' ? '♀' : (m.gender === 'male' ? '♂' : '');
+    const genderColor = m.gender === 'female' ? 'var(--accent3)' : 'var(--accent2)';
     return `<div class="msg-item" style="animation-delay:${i*0.05}s">
       <div class="msg-head">
         <div class="msg-avatar" style="background:${col}">${initial}</div>
         <div>
-          <div class="msg-name">${esc(m.name)}</div>
+          <div class="msg-name">${esc(m.name)}${genderIcon ? `<span style="color:${genderColor};margin-left:4px;font-size:0.85rem">${genderIcon}</span>` : ''}</div>
           <div style="font-size:0.72rem;color:var(--muted)">${m.mood}</div>
         </div>
         <div class="msg-time">${m.time}</div>
@@ -1309,7 +1356,7 @@ async function submitMsg(){
   btn.textContent = '发送中… ✦';
 
   try {
-    await saveMessageToGH({ name, content, mood: selectedMood, time: fmt });
+    await saveMessageToGH({ name, content, mood: selectedMood, gender: selectedGender, time: fmt });
     nameEl.value = '';
     contentEl.value = '';
     await renderMessages();
@@ -1675,7 +1722,7 @@ async function openLb(index){
   if(!p) return;
   const lbc = document.getElementById('lb-content');
   lbc.innerHTML = `
-    <img src="${esc(p.src)}" alt="照片"
+    <img src="${esc(cdnUrl(p.src))}" alt="照片"
          style="width:100%;max-height:75vh;object-fit:contain;border-radius:14px;display:block;">
   `;
   document.getElementById('lightbox').classList.add('open');
