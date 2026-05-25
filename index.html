@@ -1322,7 +1322,7 @@ renderMessages(true);
 
 /* ─── 精选照片（GitHub 云端版 ── 照片存仓库，Issue 记录） ─── */
 const PHOTOS_API = `${API_BASE}?labels=photo&state=open&per_page=30&sort=created&direction=desc`;
-const MAX_PHOTOS = 9;
+const MAX_PHOTOS = 15;
 
 /* 已加载的照片缓存（Issue对象 + 解析出的内容） */
 let _photoCache = null;
@@ -1433,6 +1433,17 @@ async function closePhotoIssue(issueNumber){
   if (!res.ok) throw new Error('删除失败');
 }
 
+/* 将 raw.githubusercontent.com 转为 jsDelivr CDN（国内手机网络友好） */
+function cdnUrl(raw){
+  if (!raw) return raw;
+  const m = raw.match(/^https?:\/\/raw\.githubusercontent\.com\/([^\/]+)\/([^\/]+)\/([^\/]+)\/(.+)$/);
+  if (m) {
+    const [, user, repo, branch, filePath] = m;
+    return `https://cdn.jsdelivr.net/gh/${user}/${repo}@${branch}/${filePath}`;
+  }
+  return raw;
+}
+
 /* 渲染照片网格 */
 async function renderPhotos(showLoading = false){
   const grid = document.getElementById('photo-grid');
@@ -1470,10 +1481,37 @@ async function renderPhotos(showLoading = false){
 
   grid.innerHTML = photos.map((p, i) => `
     <div class="photo-item" onclick="openLb(${i})" style="background:var(--surface)">
-      <img class="photo-img" src="${esc(p.src)}" alt="照片" loading="lazy" decoding="async" onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\\'padding:2rem;color:var(--muted);text-align:center\\'>加载失败</div>'">
+      <img class="photo-img" src="${esc(cdnUrl(p.src))}" alt="照片" loading="lazy" decoding="async">
       <button class="photo-del" onclick="delPhoto(event,${p.issueNumber})" title="删除">✕</button>
     </div>
   `).join('');
+
+  /* JS 驱动加载：给每张图绑 load/error，失败走延迟重试 */
+  grid.querySelectorAll('.photo-img').forEach(img => {
+    const cdnSrc = img.src;
+    let retries = 0;
+    img.addEventListener('error', function(){
+      retries++;
+      if (retries <= 2) {
+        /* CDN 第一次可能还没缓存，等 1.5s 再试 */
+        setTimeout(() => {
+          img.src = cdnSrc + (cdnSrc.includes('?') ? '&' : '?') + '_t=' + Date.now();
+        }, 1500 * retries);
+        return;
+      }
+      /* 3 次都失败：显示占位 */
+      img.style.display = 'none';
+      const ph = document.createElement('div');
+      ph.style.cssText = 'padding:2rem;color:var(--muted);text-align:center;font-size:0.85rem';
+      ph.textContent = '加载失败';
+      img.parentElement.insertBefore(ph, img.nextSibling);
+    });
+    img.addEventListener('load', function(){
+      img.style.opacity = '1';
+    });
+    img.style.opacity = '0';
+    img.style.transition = 'opacity 0.3s';
+  });
 }
 
 /* 删除照片（乐观更新：先从页面移除，后台删 Issue） */
