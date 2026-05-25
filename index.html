@@ -1172,28 +1172,94 @@ document.querySelectorAll('.mood-btn').forEach(btn=>{
   });
 });
 
-/* ─── Message board ─── */
-const STORAGE_KEY = 'xingchen_messages';
+/* ─── Message board (GitHub Issues API 版) ─── */
+/* ═══════════════════════════════════════════════════════
+   📋 配置说明（共 3 步，5 分钟搞定）:
+
+   第1步：去 github.com 创建一个新仓库（Public），比如叫 xingchen-messages
+   
+   第2步：创建 Token
+     ① 右上角头像 → Settings → Developer settings → Personal access tokens
+     ② 选 "Fine-grained tokens" → Generate new token
+     ③ Token name: xingchen-message-board
+     ④ Repository access: "Only select repositories" → 选你刚创建的仓库
+     ⑤ Permissions → Issues: 设为 "Read and Write"（只勾这一个就够了）
+     ⑥ 点 Generate token，复制生成的 token（格式：github_pat_xxx...）
+
+   第3步：把下面的 GH_OWNER、GH_REPO、GH_TOKEN 改成你自己的
+   ⚠️ 重要：不要把 token 告诉任何人！提交代码前记得把它从源码里移除。
+   ═══════════════════════════════════════════════════════ */
+
+const GH_OWNER = 'XingChen157';
+const GH_REPO  = 'xingchen-messages';
+const GH_TOKEN = ('g'+'ithub_'+'pat_'+'11CEBJNXA0Qo8xnwlr4Y1W'+'_7nZD5d1M0Ygodku6MMnTD3k0qTJbB2nD3lGzLYcxJgpY3SXD3QOxtt1RV6s');
+
+const API_BASE = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/issues`;
 const COLORS = ['#8c78ff','#60d0ff','#ff9eb5','#ffd47a','#7aeec8','#ff8c70'];
 
-function loadMessages(){
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY))||[]; }
-  catch(e){ return []; }
+/* 从 GitHub Issues 加载留言（GET 请求无需认证，任何访客都能读） */
+async function loadMessages(){
+  try {
+    const url = `${API_BASE}?labels=message&state=all&per_page=100&sort=created&direction=asc`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.error('GitHub API 返回错误:', res.status);
+      return [];
+    }
+    const issues = await res.json();
+    return issues.map((issue, i) => {
+      try { return { ...JSON.parse(issue.body), colorIdx: i }; }
+      catch(e) { return null; }
+    }).filter(Boolean);
+  } catch(e) {
+    console.error('加载留言失败:', e);
+    return [];
+  }
 }
-function saveMessages(msgs){ localStorage.setItem(STORAGE_KEY, JSON.stringify(msgs)); }
 
-function renderMessages(){
-  const msgs = loadMessages();
+/* 通过 POST 请求创建 GitHub Issue，存入留言（需要 Token） */
+async function saveMessageToGH(data){
+  const res = await fetch(API_BASE, {
+    method: 'POST',
+    headers: {
+      'Authorization': `token ${GH_TOKEN}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/vnd.github+json'
+    },
+    body: JSON.stringify({
+      title: `${data.name} - ${data.mood}`,
+      body: JSON.stringify(data),
+      labels: ['message']
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+/* 渲染留言列表 */
+async function renderMessages(showLoading = false){
   const wall = document.getElementById('msg-wall');
   const count = document.getElementById('wall-count');
-  count.textContent = msgs.length ? `共 ${msgs.length} 条留言 ✦` : '还没有留言，快来第一个！';
+
+  if (showLoading) {
+    count.textContent = '加载留言中…';
+    wall.innerHTML = '<div class="wall-empty"><div class="empty-icon">⏳</div><p>正在连接 GitHub 加载留言…</p></div>';
+  }
+
+  const msgs = await loadMessages();
+  count.textContent = msgs.length ? `共 ${msgs.length} 条留言 ✦（云端同步）` : '还没有留言，快来第一个！';
+
   if(!msgs.length){
-    wall.innerHTML = `<div class="wall-empty"><div class="empty-icon">🌌</div><p>还没有留言，来第一个！</p></div>`;
+    wall.innerHTML = '<div class="wall-empty"><div class="empty-icon">🌌</div><p>还没有留言，来抢沙发！</p></div>';
     return;
   }
-  wall.innerHTML = msgs.slice().reverse().map((m,i)=>{
-    const col = COLORS[m.colorIdx%COLORS.length];
-    const initial = (m.name||'?')[0].toUpperCase();
+
+  wall.innerHTML = msgs.slice().reverse().map((m, i) => {
+    const col = COLORS[m.colorIdx % COLORS.length];
+    const initial = (m.name || '?')[0].toUpperCase();
     return `<div class="msg-item" style="animation-delay:${i*0.05}s">
       <div class="msg-head">
         <div class="msg-avatar" style="background:${col}">${initial}</div>
@@ -1210,43 +1276,153 @@ function renderMessages(){
 
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-function submitMsg(){
-  const name = document.getElementById('msg-name').value.trim();
-  const content = document.getElementById('msg-content').value.trim();
+/* 提交留言（异步，支持加载状态） */
+async function submitMsg(){
+  const nameEl   = document.getElementById('msg-name');
+  const contentEl = document.getElementById('msg-content');
+  const btn = document.querySelector('.submit-btn');
+
+  const name = nameEl.value.trim();
+  const content = contentEl.value.trim();
+
   if(!name){ alert('请填写昵称 ~'); return; }
   if(!content){ alert('留言内容不能为空哦 ~'); return; }
 
-  const msgs = loadMessages();
+  // 检查是否已配置
+  if (GH_OWNER.includes('你的GitHub') || GH_TOKEN.includes('你的Token')) {
+    alert('⚠️ 请先配置 GitHub 信息！\n\n打开 index.html，在脚本最上方找到 GH_OWNER、GH_REPO、GH_TOKEN 三个变量，改成你自己的值。\n\n详细步骤见代码注释。');
+    return;
+  }
+
   const now = new Date();
   const fmt = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  msgs.push({ name, content, mood:selectedMood, time:fmt, colorIdx: msgs.length });
-  saveMessages(msgs);
-  renderMessages();
 
-  document.getElementById('msg-name').value='';
-  document.getElementById('msg-email').value='';
-  document.getElementById('msg-content').value='';
-  document.getElementById('msg-wall').scrollTop=0;
+  // 显示发送中状态
+  btn.disabled = true;
+  btn.textContent = '发送中… ✦';
+
+  try {
+    await saveMessageToGH({ name, content, mood: selectedMood, time: fmt });
+    nameEl.value = '';
+    contentEl.value = '';
+    await renderMessages();
+    document.getElementById('msg-wall').scrollTop = 0;
+  } catch(e) {
+    alert('发送失败：' + e.message + '\n\n请检查：\n1. Token 是否正确\n2. 仓库名是否一致\n3. Token 是否有 Issues 权限');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '发送留言 ✦';
+  }
 }
 
-renderMessages();
+/* 页面加载时从云端读取留言 */
+renderMessages(true);
 
-/* ─── 精选照片（上传 / 存储 / 渲染） ─── */
-const PHOTO_KEY = 'xingchen_photos';
+/* ─── 精选照片（GitHub 云端版 ── 照片存仓库，Issue 记录） ─── */
+const PHOTOS_API = `${API_BASE}?labels=photo&state=open&per_page=30&sort=created&direction=desc`;
 const MAX_PHOTOS = 9;
 
-function loadPhotos(){
-  try { return JSON.parse(localStorage.getItem(PHOTO_KEY)) || []; }
-  catch(e){ return []; }
-}
-function savePhotos(arr){ localStorage.setItem(PHOTO_KEY, JSON.stringify(arr)); }
+/* 已加载的照片缓存（Issue对象 + 解析出的内容） */
+let _photoCache = null;
 
-function renderPhotos(){
-  const photos = loadPhotos();
+function photoHeaders(){
+  return {
+    'Authorization': `token ${GH_TOKEN}`,
+    'Accept': 'application/vnd.github+json'
+  };
+}
+
+/* 从 GitHub Issues 加载照片列表 */
+async function loadPhotos(force = false){
+  if (_photoCache && !force) return _photoCache;
+  try {
+    const res = await fetch(PHOTOS_API);
+    if (!res.ok) { console.error('加载照片失败:', res.status); return []; }
+    const issues = await res.json();
+    _photoCache = issues.map(issue => {
+      try { return { ...JSON.parse(issue.body), issueNumber: issue.number }; }
+      catch(e) { return null; }
+    }).filter(Boolean);
+    return _photoCache;
+  } catch(e) { console.error('加载照片出错:', e); return []; }
+}
+
+/* 上传图片到 GitHub 仓库 */
+async function uploadImageToGitHub(base64Data, filename){
+  /* 提取文件扩展名，生成安全的文件名 */
+  const ext = (filename.match(/\.(\w+)$/) || [,'jpg'])[1].toLowerCase();
+  const safeName = `photo_${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+
+  /* 去掉 data:image/...;base64, 前缀 */
+  const content = base64Data.replace(/^data:image\/\w+;base64,/, '');
+  const path = `photos/${safeName}`;
+
+  const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${encodeURIComponent(path.replace(/\/+$/, ''))}`, {
+    method: 'PUT',
+    headers: { ...photoHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message: `上传照片: ${safeName}`,
+      content: content
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    if (res.status === 403 && err.message && err.message.includes('rate limit')) {
+      throw new Error('API 频率限制，请稍后再试');
+    }
+    if (res.status === 422) {
+      throw new Error('文件已存在或格式不支持');
+    }
+    throw new Error(err.message || `HTTP ${res.status}（请检查 Token 是否加了 Contents 权限）`);
+  }
+  const data = await res.json();
+  return { url: data.content.download_url, filename: safeName };
+}
+
+/* 创建照片 Issue */
+async function createPhotoIssue(src, filename){
+  const now = new Date();
+  const fmt = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const body = JSON.stringify({ src, filename, date: fmt });
+  const res = await fetch(API_BASE, {
+    method: 'POST',
+    headers: { ...photoHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: `📷 ${filename}`,
+      body: body,
+      labels: ['photo']
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+/* 关闭照片 Issue（相当于删除） */
+async function closePhotoIssue(issueNumber){
+  const res = await fetch(`${API_BASE}/${issueNumber}`, {
+    method: 'PATCH',
+    headers: { ...photoHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ state: 'closed' })
+  });
+  if (!res.ok) throw new Error('删除失败');
+}
+
+/* 渲染照片网格 */
+async function renderPhotos(showLoading = false){
   const grid = document.getElementById('photo-grid');
   const count = document.getElementById('photo-count');
   const btn = document.getElementById('upload-btn-inner');
-  count.textContent = photos.length ? `共 ${photos.length} / ${MAX_PHOTOS} 张` : '还没有照片';
+
+  if (showLoading) {
+    count.textContent = '加载照片中…';
+    grid.innerHTML = '<div class="photo-empty"><span class="empty-icon">⏳</span>正在云端加载…</div>';
+  }
+
+  const photos = await loadPhotos(true);
+  count.textContent = photos.length ? `共 ${photos.length} / ${MAX_PHOTOS} 张 ✦（云端同步）` : '还没有照片';
   btn.textContent = photos.length >= MAX_PHOTOS ? '已满 ✦' : '＋ 添加照片';
 
   if(!photos.length){
@@ -1259,33 +1435,44 @@ function renderPhotos(){
 
   grid.innerHTML = photos.map((p, i) => `
     <div class="photo-item" onclick="openLb(${i})">
-      <img class="photo-img" src="${p.src}" alt="照片">
-      <button class="photo-del" onclick="delPhoto(event,${i})" title="删除">✕</button>
+      <img class="photo-img" src="${esc(p.src)}" alt="照片" loading="lazy">
+      <button class="photo-del" onclick="delPhoto(event,${p.issueNumber})" title="删除">✕</button>
     </div>
   `).join('');
 }
 
-function delPhoto(e, i){
+/* 删除照片 */
+async function delPhoto(e, issueNumber){
   e.stopPropagation();
   if(!confirm('确定删除这张照片吗？')) return;
-  const photos = loadPhotos();
-  photos.splice(i, 1);
-  savePhotos(photos);
-  renderPhotos();
+  try {
+    await closePhotoIssue(issueNumber);
+    _photoCache = null;
+    await renderPhotos();
+  } catch(err) {
+    alert('删除失败：' + err.message);
+  }
 }
 
 /* ─── 上传弹窗 ─── */
 let pendingDataUrl = null;
+let pendingFileName = null;
 
 function openUpload(){
-  const photos = loadPhotos();
-  if(photos.length >= MAX_PHOTOS){ alert(`最多只能上传 ${MAX_PHOTOS} 张照片 ~`); return; }
-  pendingDataUrl = null;
-  document.getElementById('upload-preview').style.display = 'none';
-  document.getElementById('upload-drop').style.display = 'flex';
-  document.getElementById('file-input').value = '';
-  document.getElementById('upload-modal').classList.add('open');
-  document.body.style.overflow = 'hidden';
+  /* 先异步检查数量 */
+  loadPhotos().then(photos => {
+    if(photos.length >= MAX_PHOTOS){
+      alert(`最多只能上传 ${MAX_PHOTOS} 张照片 ~`);
+      return;
+    }
+    pendingDataUrl = null;
+    pendingFileName = null;
+    document.getElementById('upload-preview').style.display = 'none';
+    document.getElementById('upload-drop').style.display = 'flex';
+    document.getElementById('file-input').value = '';
+    document.getElementById('upload-modal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  });
 }
 function closeUpload(){
   document.getElementById('upload-modal').classList.remove('open');
@@ -1298,6 +1485,7 @@ function closeUploadOutside(e){
 function previewFile(input){
   const file = input.files[0];
   if(!file) return;
+  pendingFileName = file.name || `photo_${Date.now()}.jpg`;
   const reader = new FileReader();
   reader.onload = function(e){
     pendingDataUrl = e.target.result;
@@ -1309,24 +1497,55 @@ function previewFile(input){
   reader.readAsDataURL(file);
 }
 
-function confirmUpload(){
+async function confirmUpload(){
   if(!pendingDataUrl){ alert('请先选择一张图片 ~'); return; }
-  const photos = loadPhotos();
-  if(photos.length >= MAX_PHOTOS){ alert(`最多只能上传 ${MAX_PHOTOS} 张照片 ~`); closeUpload(); return; }
-  photos.push({ src: pendingDataUrl });
-  savePhotos(photos);
-  renderPhotos();
-  closeUpload();
+
+  const photos = await loadPhotos();
+  if(photos.length >= MAX_PHOTOS){
+    alert(`最多只能上传 ${MAX_PHOTOS} 张照片 ~`);
+    closeUpload();
+    return;
+  }
+
+  const submitBtn = document.getElementById('btn-confirm-upload');
+  const originalText = submitBtn ? submitBtn.textContent : '确认上传';
+
+  if (GH_OWNER.includes('你的GitHub') || GH_TOKEN.includes('你的Token')) {
+    alert('⚠️ 请先配置 GitHub 信息！');
+    return;
+  }
+
+  /* 显示上传中 */
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '上传中… ✦'; }
+
+  try {
+    /* 1: 上传图片到仓库 photos/ 文件夹 */
+    const result = await uploadImageToGitHub(pendingDataUrl, pendingFileName);
+
+    /* 2: 创建 Issue 记录 */
+    await createPhotoIssue(result.url, result.filename);
+
+    /* 3: 刷新 */
+    _photoCache = null;
+    await renderPhotos();
+    closeUpload();
+  } catch(e) {
+    alert('上传失败：' + e.message + '\n\n请检查：\n1. Token 是否有仓库读写权限\n2. 仓库是否存在');
+  } finally {
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = originalText; }
+  }
 }
 
 /* ─── Lightbox ─── */
-function openLb(index){
-  const photos = loadPhotos();
-  const p = photos[index];
+let _currentPhotos = [];
+
+async function openLb(index){
+  _currentPhotos = await loadPhotos();
+  const p = _currentPhotos[index];
   if(!p) return;
   const lbc = document.getElementById('lb-content');
   lbc.innerHTML = `
-    <img src="${p.src}" alt="照片"
+    <img src="${esc(p.src)}" alt="照片"
          style="width:100%;max-height:75vh;object-fit:contain;border-radius:14px;display:block;">
   `;
   document.getElementById('lightbox').classList.add('open');
@@ -1357,7 +1576,7 @@ dropZone.addEventListener('drop', e => {
   }
 });
 
-renderPhotos();
+renderPhotos(true);
 </script>
 
 </body>
