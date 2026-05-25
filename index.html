@@ -46,8 +46,6 @@
       z-index: 0;
       pointer-events: none;
       background: url('images/bg.jpg') center center / cover no-repeat;
-      will-change: transform;
-      transform: translateZ(0);
     }
     
     /* 粒子特效层 */
@@ -57,7 +55,6 @@
       z-index: 1;
       pointer-events: none;
       overflow: hidden;
-      contain: strict;
     }
     .particle {
       position: absolute;
@@ -65,7 +62,6 @@
       background: rgba(255,255,255,0.6);
       border-radius: 50%;
       animation: float-up linear infinite;
-      will-change: transform, opacity;
     }
     @keyframes float-up {
       0% { transform: translateY(100vh) scale(0); opacity: 0; }
@@ -1382,7 +1378,9 @@ async function uploadImageToGitHub(base64Data, filename){
   const content = base64Data.replace(/^data:image\/\w+;base64,/, '');
   const path = `photos/${safeName}`;
 
-  const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${encodeURIComponent(path.replace(/\/+$/, ''))}`, {
+  /* 分片编码路径，保留 / 作为目录分隔符（不用 encodeURIComponent 一把梭） */
+  const encodedPath = path.split('/').map(seg => encodeURIComponent(seg)).join('/');
+  const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${encodedPath}`, {
     method: 'PUT',
     headers: { ...photoHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({
