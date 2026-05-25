@@ -1222,7 +1222,7 @@ async function saveMessageToGH(data){
   const res = await fetch(API_BASE, {
     method: 'POST',
     headers: {
-      'Authorization': `token ${GH_TOKEN}`,
+      'Authorization': `Bearer ${GH_TOKEN}`,
       'Content-Type': 'application/json',
       'Accept': 'application/vnd.github+json'
     },
@@ -1327,7 +1327,7 @@ let _photoCache = null;
 
 function photoHeaders(){
   return {
-    'Authorization': `token ${GH_TOKEN}`,
+    'Authorization': `Bearer ${GH_TOKEN}`,
     'Accept': 'application/vnd.github+json'
   };
 }
