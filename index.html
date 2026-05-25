@@ -1441,16 +1441,37 @@ async function renderPhotos(showLoading = false){
   `).join('');
 }
 
-/* 删除照片 */
+/* 删除照片（乐观更新：先从页面移除，后台删 Issue） */
 async function delPhoto(e, issueNumber){
   e.stopPropagation();
   if(!confirm('确定删除这张照片吗？')) return;
+
+  /* 1: 立即从 DOM 移除，用户不用等 */
+  const card = e.target.closest('.photo-item');
+  if (card) {
+    card.style.transition = 'opacity 0.2s, transform 0.2s';
+    card.style.opacity = '0';
+    card.style.transform = 'scale(0.9)';
+    setTimeout(() => card.remove(), 220);
+  }
+
+  /* 2: 清理缓存，让下次加载不带这条 */
+  if (_photoCache) {
+    _photoCache = _photoCache.filter(p => p.issueNumber !== issueNumber);
+  }
+
+  /* 3: 更新计数 */
+  const count = document.getElementById('photo-count');
+  const photos = _photoCache || await loadPhotos();
+  count.textContent = photos.length ? `共 ${photos.length} / ${MAX_PHOTOS} 张 ✦（云端同步）` : '还没有照片';
+  const btn = document.getElementById('upload-btn-inner');
+  if (btn) btn.textContent = photos.length >= MAX_PHOTOS ? '已满 ✦' : '＋ 添加照片';
+
+  /* 4: 后台删 GitHub Issue（静默失败，不影响体验） */
   try {
     await closePhotoIssue(issueNumber);
-    _photoCache = null;
-    await renderPhotos();
   } catch(err) {
-    alert('删除失败：' + err.message);
+    console.warn('GitHub 删除失败（可在仓库手动清理）:', err.message);
   }
 }
 
