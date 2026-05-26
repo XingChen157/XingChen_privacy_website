@@ -1319,9 +1319,9 @@ async function renderMessages(showLoading = false){
         <div class="msg-avatar" style="background:${col}">${initial}</div>
         <div>
           <div class="msg-name">${esc(m.name)}${genderIcon ? `<span style="color:${genderColor};margin-left:4px;font-size:0.85rem">${genderIcon}</span>` : ''}</div>
-          <div style="font-size:0.72rem;color:var(--muted)">${m.mood}</div>
+          <div style="font-size:0.72rem;color:var(--muted)">${esc(m.mood)}</div>
         </div>
-        <div class="msg-time">${m.time}</div>
+        <div class="msg-time">${esc(m.time)}</div>
       </div>
       <div class="msg-text">${esc(m.content)}</div>
     </div>`;
