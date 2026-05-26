@@ -1382,7 +1382,7 @@ async function submitMsg(){
 renderMessages(true);
 
 /* ─── 精选照片（GitHub 云端版 ── 照片存仓库，Issue 记录） ─── */
-const PHOTOS_API = `${API_BASE}?labels=photo&state=open&per_page=30&sort=created&direction=desc`;
+const PHOTOS_API = `${API_BASE}?labels=photo,Approved&state=open&per_page=30&sort=created&direction=desc`;
 const MAX_PHOTOS = 15;
 
 /* 已加载的照片缓存（Issue对象 + 解析出的内容） */
@@ -1484,16 +1484,6 @@ async function createPhotoIssue(src, filename){
   return res.json();
 }
 
-/* 关闭照片 Issue（相当于删除） */
-async function closePhotoIssue(issueNumber){
-  const res = await fetch(`${API_BASE}/${issueNumber}`, {
-    method: 'PATCH',
-    headers: { ...photoHeaders(), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ state: 'closed' })
-  });
-  if (!res.ok) throw new Error('删除失败');
-}
-
 /* 将 raw.githubusercontent.com 转为 jsDelivr CDN（国内手机网络友好） */
 function cdnUrl(raw){
   if (!raw) return raw;
@@ -1543,7 +1533,6 @@ async function renderPhotos(showLoading = false){
   grid.innerHTML = photos.map((p, i) => `
     <div class="photo-item" onclick="openLb(${i})" style="background:var(--surface)">
       <img class="photo-img" src="${esc(cdnUrl(p.src))}" alt="照片" loading="lazy" decoding="async">
-      <button class="photo-del" onclick="delPhoto(event,${p.issueNumber})" title="删除">✕</button>
     </div>
   `).join('');
 
@@ -1573,40 +1562,6 @@ async function renderPhotos(showLoading = false){
     img.style.opacity = '0';
     img.style.transition = 'opacity 0.3s';
   });
-}
-
-/* 删除照片（乐观更新：先从页面移除，后台删 Issue） */
-async function delPhoto(e, issueNumber){
-  e.stopPropagation();
-  if(!confirm('确定删除这张照片吗？')) return;
-
-  /* 1: 立即从 DOM 移除，用户不用等 */
-  const card = e.target.closest('.photo-item');
-  if (card) {
-    card.style.transition = 'opacity 0.2s, transform 0.2s';
-    card.style.opacity = '0';
-    card.style.transform = 'scale(0.9)';
-    setTimeout(() => card.remove(), 220);
-  }
-
-  /* 2: 清理缓存，让下次加载不带这条 */
-  if (_photoCache) {
-    _photoCache = _photoCache.filter(p => p.issueNumber !== issueNumber);
-  }
-
-  /* 3: 更新计数 */
-  const count = document.getElementById('photo-count');
-  const photos = _photoCache || await loadPhotos() || [];
-  count.textContent = photos.length ? `共 ${photos.length} / ${MAX_PHOTOS} 张 ✦（云端同步）` : '还没有照片';
-  const btn = document.getElementById('upload-btn-inner');
-  if (btn) btn.textContent = photos.length >= MAX_PHOTOS ? '已满 ✦' : '＋ 添加照片';
-
-  /* 4: 后台删 GitHub Issue（静默失败，不影响体验） */
-  try {
-    await closePhotoIssue(issueNumber);
-  } catch(err) {
-    console.warn('GitHub 删除失败（可在仓库手动清理）:', err.message);
-  }
 }
 
 /* ─── 上传弹窗 ─── */
@@ -1708,16 +1663,21 @@ async function confirmUpload(){
     /* 1: 上传图片到仓库 photos/ 文件夹 */
     const result = await uploadImageToGitHub(pendingDataUrl, pendingFileName);
 
-    /* 2: 创建 Issue 记录 */
+    /* 2: 创建 Issue 记录（只有 photo 标签，等待博主加 Approved 后展示） */
     await createPhotoIssue(result.url, result.filename);
 
-    /* 3: 刷新 */
-    _photoCache = null;
-    await renderPhotos();
+    /* 3: 上传成功提示（不刷新，等审核） */
     closeUpload();
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = '已提交，等待审核 ✓';
+      setTimeout(() => {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      }, 3000);
+    }
   } catch(e) {
     alert('上传失败：' + e.message + '\n\n请检查：\n1. Token 是否有仓库读写权限\n2. 仓库是否存在');
-  } finally {
     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = originalText; }
   }
 }
