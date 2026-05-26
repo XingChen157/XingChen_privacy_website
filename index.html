@@ -1249,10 +1249,10 @@ const GH_TOKEN = ('g'+'ithub_'+'pat_'+'11CEBJNXA0zaPNyFpGQYXZ'+'_xfxctjMhbUfjsT8
 const API_BASE = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/issues`;
 const COLORS = ['#8c78ff','#60d0ff','#ff9eb5','#ffd47a','#7aeec8','#ff8c70'];
 
-/* 从 GitHub Issues 加载留言（GET 请求无需认证，任何访客都能读） */
+/* 从 GitHub Issues 加载留言（只显示已审核通过的，GET 请求无需认证，任何访客都能读） */
 async function loadMessages(){
   try {
-    const url = `${API_BASE}?labels=message&state=all&per_page=100&sort=created&direction=asc`;
+    const url = `${API_BASE}?labels=message,approved&state=open&per_page=100&sort=created&direction=asc`;
     const res = await fetch(url);
     if (!res.ok) {
       console.error('GitHub API 返回错误:', res.status);
@@ -1355,17 +1355,26 @@ async function submitMsg(){
   btn.disabled = true;
   btn.textContent = '发送中… ✦';
 
+  let succeeded = false;
   try {
     await saveMessageToGH({ name, content, mood: selectedMood, gender: selectedGender, time: fmt });
     nameEl.value = '';
     contentEl.value = '';
-    await renderMessages();
-    document.getElementById('msg-wall').scrollTop = 0;
+    succeeded = true;
+    // 提交后不立即刷新（新留言需审核后才显示），只给用户友好提示
+    btn.textContent = '已发送，等待审核 ✓';
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.textContent = '发送留言 ✦';
+    }, 3000);
   } catch(e) {
     alert('发送失败：' + e.message + '\n\n请检查：\n1. Token 是否正确\n2. 仓库名是否一致\n3. Token 是否有 Issues 权限');
   } finally {
-    btn.disabled = false;
-    btn.textContent = '发送留言 ✦';
+    // 只有失败时才在 finally 里重置按钮；成功时由上面的 setTimeout 负责
+    if (!succeeded) {
+      btn.disabled = false;
+      btn.textContent = '发送留言 ✦';
+    }
   }
 }
 
