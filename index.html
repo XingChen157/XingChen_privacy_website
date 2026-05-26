@@ -1252,7 +1252,7 @@ const COLORS = ['#8c78ff','#60d0ff','#ff9eb5','#ffd47a','#7aeec8','#ff8c70'];
 /* 从 GitHub Issues 加载留言（只显示已审核通过的，GET 请求无需认证，任何访客都能读） */
 async function loadMessages(){
   try {
-    const url = `${API_BASE}?labels=message,approved&state=open&per_page=100&sort=created&direction=asc`;
+    const url = `${API_BASE}?labels=message,Approved&state=open&per_page=100&sort=created&direction=asc`;
     const res = await fetch(url);
     if (!res.ok) {
       console.error('GitHub API 返回错误:', res.status);
